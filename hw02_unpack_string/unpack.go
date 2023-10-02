@@ -27,12 +27,13 @@ func addSymbolInResult(result *strings.Builder, value string, isString bool) {
 	}
 }
 
-func Unpack(data string) (string, error) {
+func Unpack(s string) (string, error) {
 	var (
 		prevValue    string
 		prevIsString bool
 		result       strings.Builder
 	)
+	data := []rune(s)
 	for i := 0; i < len(data); i++ {
 		currValue := string(data[i])
 		if IsDigit(currValue) && !prevIsString && prevValue != `\` {
@@ -58,7 +59,8 @@ func Unpack(data string) (string, error) {
 	return result.String(), nil
 }
 
-func UnpackFirst(data string) (string, error) {
+func UnpackFirst(s string) (string, error) {
+	data := []rune(s)
 	var prevValue string
 	var result strings.Builder
 	for i := 0; i < len(data); i++ {
