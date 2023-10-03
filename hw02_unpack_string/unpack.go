@@ -55,6 +55,9 @@ func Unpack(s string) (string, error) {
 		prevIsString = isString
 		prevValue = currValue
 	}
+	if prevValue == `\` {
+		return "", ErrInvalidString
+	}
 	addSymbolInResult(&result, prevValue, prevIsString)
 	return result.String(), nil
 }
