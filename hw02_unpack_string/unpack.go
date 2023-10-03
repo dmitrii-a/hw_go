@@ -33,9 +33,8 @@ func Unpack(s string) (string, error) {
 		prevIsString bool
 		result       strings.Builder
 	)
-	data := []rune(s)
-	for i := 0; i < len(data); i++ {
-		currValue := string(data[i])
+	for _, v := range s {
+		currValue := string(v)
 		if IsDigit(currValue) && !prevIsString && prevValue != `\` {
 			return "", ErrInvalidString
 		}
@@ -63,11 +62,10 @@ func Unpack(s string) (string, error) {
 }
 
 func UnpackFirst(s string) (string, error) {
-	data := []rune(s)
 	var prevValue string
 	var result strings.Builder
-	for i := 0; i < len(data); i++ {
-		currValue := string(data[i])
+	for _, v := range s {
+		currValue := string(v)
 		if IsDigit(currValue) && (IsDigit(prevValue) || prevValue == "") {
 			return "", ErrInvalidString
 		}
