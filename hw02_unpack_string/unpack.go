@@ -34,13 +34,13 @@ func Unpack(s string) (string, error) {
 		if prevValue == backslash && !(unicode.IsDigit(value) || value == backslash) {
 			return "", ErrInvalidString
 		}
-		var newValue []rune
+		newValue := []rune{prevValue}
 		if unicode.IsDigit(value) {
-			for i := 0; i < int(value-'0'); i++ {
-				newValue = append(newValue, prevValue)
+			size := int(value - '0')
+			newValue = make([]rune, size)
+			for i := 0; i < size; i++ {
+				newValue[i] = prevValue
 			}
-		} else {
-			newValue = append(newValue, prevValue)
 		}
 		addSymbolInResult(&result, newValue, prevIsString)
 		isString := true
