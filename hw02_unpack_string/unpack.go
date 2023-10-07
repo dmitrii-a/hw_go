@@ -2,82 +2,86 @@ package hw02unpackstring
 
 import (
 	"errors"
-	"strconv"
 	"strings"
+	"unicode"
 )
 
 var ErrInvalidString = errors.New("invalid string")
 
-func IsDigit(s string) bool {
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return false
-		}
-	}
-	return true
+func prevIsNotEscape(prevValue rune, prevIsString bool) bool {
+	return prevValue != '\\' || prevIsString
 }
 
-func prevIsNotEscape(prevValue string, prevIsString bool) bool {
-	return prevValue != `\` || prevIsString
-}
-
-func addSymbolInResult(result *strings.Builder, value string, isString bool) {
+func addSymbolInResult(result *strings.Builder, value []rune, isString bool) {
 	if isString {
-		result.WriteString(value)
+		for _, r := range value {
+			result.WriteRune(r)
+		}
 	}
 }
 
 func Unpack(s string) (string, error) {
 	var (
-		prevValue    string
+		prevValue    rune
 		prevIsString bool
 		result       strings.Builder
 	)
-	for _, v := range s {
-		currValue := string(v)
-		if IsDigit(currValue) && !prevIsString && prevValue != `\` {
+	backslash := '\\'
+	for _, value := range s {
+		if unicode.IsDigit(value) && !prevIsString && prevValue != backslash {
 			return "", ErrInvalidString
 		}
-		if prevValue == `\` && !(IsDigit(currValue) || currValue == `\`) {
+		if prevValue == backslash && !(unicode.IsDigit(value) || value == backslash) {
 			return "", ErrInvalidString
 		}
-		newValue := prevValue
-		if IsDigit(currValue) {
-			digit, _ := strconv.Atoi(currValue)
-			newValue = strings.Repeat(prevValue, digit)
+		newValue := []rune{prevValue}
+		if unicode.IsDigit(value) {
+			size := int(value - '0')
+			newValue = make([]rune, size)
+			for i := 0; i < size; i++ {
+				newValue[i] = prevValue
+			}
 		}
 		addSymbolInResult(&result, newValue, prevIsString)
 		isString := true
-		if (IsDigit(currValue) || currValue == `\`) && prevIsNotEscape(prevValue, prevIsString) {
+		if (unicode.IsDigit(value) || value == backslash) && prevIsNotEscape(prevValue, prevIsString) {
 			isString = false
 		}
 		prevIsString = isString
-		prevValue = currValue
+		prevValue = value
 	}
-	if prevValue == `\` {
+	if prevValue == backslash {
 		return "", ErrInvalidString
 	}
-	addSymbolInResult(&result, prevValue, prevIsString)
+	addSymbolInResult(&result, []rune{prevValue}, prevIsString)
 	return result.String(), nil
 }
 
-func UnpackFirst(s string) (string, error) {
-	var prevValue string
-	var result strings.Builder
-	for _, v := range s {
-		currValue := string(v)
-		if IsDigit(currValue) && (IsDigit(prevValue) || prevValue == "") {
-			return "", ErrInvalidString
-		}
-		newValue := prevValue
-		if IsDigit(currValue) {
-			digit, _ := strconv.Atoi(currValue)
-			newValue = strings.Repeat(prevValue, digit)
-			currValue = ""
-		}
-		result.WriteString(newValue)
-		prevValue = currValue
-	}
-	result.WriteString(prevValue)
-	return result.String(), nil
-}
+//func IsDigit(s string) bool {
+//	for _, c := range s {
+//		if c < '0' || c > '9' {
+//			return false
+//		}
+//	}
+//	return true
+//}
+//func UnpackFirst(s string) (string, error) {
+//	var prevValue string
+//	var result strings.Builder
+//	for _, v := range s {
+//		currValue := string(v)
+//		if IsDigit(currValue) && (IsDigit(prevValue) || prevValue == "") {
+//			return "", ErrInvalidString
+//		}
+//		newValue := prevValue
+//		if IsDigit(currValue) {
+//			digit, _ := strconv.Atoi(currValue)
+//			newValue = strings.Repeat(prevValue, digit)
+//			currValue = ""
+//		}
+//		result.WriteString(newValue)
+//		prevValue = currValue
+//	}
+//	result.WriteString(prevValue)
+//	return result.String(), nil
+//}
