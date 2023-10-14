@@ -107,4 +107,19 @@ func TestList(t *testing.T) {
 		require.Equal(t, (*ListItem)(nil), item.Next)
 		require.Equal(t, (*ListItem)(nil), item3.Prev)
 	})
+
+	t.Run("check changing head/tail when remove item", func(t *testing.T) {
+		l := NewList()
+		item := l.PushFront(1)
+		item2 := l.PushFront(2)
+		require.Equal(t, 2, l.Len())
+		l.Remove(item)
+		l.Remove(item2)
+		require.Equal(t, 0, l.Len())
+		item3 := l.PushFront(3)
+		require.Equal(t, (*ListItem)(nil), item3.Next)
+		l.Remove(item3)
+		item4 := l.PushBack(4)
+		require.Equal(t, (*ListItem)(nil), item4.Prev)
+	})
 }
