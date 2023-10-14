@@ -62,7 +62,6 @@ func TestCache(t *testing.T) {
 		require.False(t, exist)
 		_, exist = c.Get("b")
 		require.False(t, exist)
-
 	})
 
 	t.Run("pushing out items due to queue size", func(t *testing.T) {
