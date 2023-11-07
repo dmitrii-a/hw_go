@@ -20,13 +20,12 @@ type TaskGroup struct {
 	mutex        *sync.Mutex
 }
 
-func (g *TaskGroup) worker() {
+func (g *TaskGroup) startWorker() {
 	for {
 		select {
 		case <-g.stop:
 			return
 		case task := <-g.tasksCh:
-			g.wg.Add(1)
 			if err := task(); err != nil {
 				g.addError()
 			}
@@ -61,7 +60,7 @@ func Run(tasks []Task, n, m int) error {
 	if n == 0 {
 		return ErrNoWorkers
 	}
-	group := TaskGroup{
+	group := &TaskGroup{
 		tasksCh:      make(chan Task),
 		errorCounter: make(chan struct{}, m),
 		stop:         make(chan struct{}),
@@ -70,11 +69,13 @@ func Run(tasks []Task, n, m int) error {
 	}
 	defer close(group.errorCounter)
 	for i := 0; i < n; i++ {
-		go group.worker()
+		go group.startWorker()
 	}
 	for _, task := range tasks {
+		group.wg.Add(1)
 		select {
 		case <-group.stop:
+			group.wg.Done()
 			break
 		case group.tasksCh <- task:
 		}

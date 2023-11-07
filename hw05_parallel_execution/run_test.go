@@ -173,14 +173,13 @@ func TestRun(t *testing.T) {
 
 		workersCount := 5
 		maxErrorsCount := 1
-		var err error
+
 		go func() {
-			err = Run(tasks, workersCount, maxErrorsCount)
+			_ = Run(tasks, workersCount, maxErrorsCount)
 		}()
 
 		require.Eventually(t, func() bool {
-			return runTasksCount == int32(tasksCount)
+			return atomic.LoadInt32(&runTasksCount) == int32(tasksCount)
 		}, sumTime/2, 10*time.Millisecond, "not all tasks were completed, tasks were run sequentially")
-		require.NoError(t, err)
 	})
 }
