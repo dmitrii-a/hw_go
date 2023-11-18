@@ -3,6 +3,7 @@ package hw05parallelexecution
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 )
 
 var (
@@ -12,46 +13,18 @@ var (
 
 type Task func() error
 
-type TaskGroup struct {
-	tasksCh      chan Task
-	errorCounter chan struct{}
-	stop         chan struct{}
-	wg           *sync.WaitGroup
-	mutex        *sync.Mutex
-}
-
-func (g *TaskGroup) startWorker() {
+func worker(tasks chan Task, errorCounter *int64, maxErrorsCount int64, stop chan struct{}, wg *sync.WaitGroup) {
 	for {
 		select {
-		case <-g.stop:
+		case <-stop:
 			return
-		case task := <-g.tasksCh:
-			if err := task(); err != nil {
-				g.addError()
+		case task := <-tasks:
+			if atomic.LoadInt64(errorCounter) < maxErrorsCount && task != nil {
+				if err := task(); err != nil {
+					atomic.AddInt64(errorCounter, 1)
+				}
 			}
-			g.wg.Done()
-		}
-	}
-}
-
-func (g *TaskGroup) waitWorkers() {
-	g.wg.Wait()
-}
-
-func (g *TaskGroup) stopWorkers() {
-	close(g.stop)
-}
-
-func (g *TaskGroup) addError() {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-	select {
-	case <-g.stop:
-	default:
-		if len(g.errorCounter) == cap(g.errorCounter) {
-			g.stopWorkers()
-		} else {
-			g.errorCounter <- struct{}{}
+			wg.Done()
 		}
 	}
 }
@@ -60,30 +33,27 @@ func Run(tasks []Task, n, m int) error {
 	if n == 0 {
 		return ErrNoWorkers
 	}
-	group := &TaskGroup{
-		tasksCh:      make(chan Task),
-		errorCounter: make(chan struct{}, m),
-		stop:         make(chan struct{}),
-		wg:           &sync.WaitGroup{},
-		mutex:        &sync.Mutex{},
-	}
-	defer close(group.errorCounter)
+	var (
+		errorCounter   = int64(0)
+		maxErrorsCount = int64(m)
+		tasksCh        = make(chan Task, m)
+		stop           = make(chan struct{})
+		wg             = &sync.WaitGroup{}
+	)
 	for i := 0; i < n; i++ {
-		go group.startWorker()
+		go worker(tasksCh, &errorCounter, maxErrorsCount, stop, wg)
 	}
 	for _, task := range tasks {
-		group.wg.Add(1)
-		select {
-		case <-group.stop:
-			group.wg.Done()
+		if atomic.LoadInt64(&errorCounter) >= maxErrorsCount {
 			break
-		case group.tasksCh <- task:
 		}
+		wg.Add(1)
+		tasksCh <- task
 	}
-	group.waitWorkers()
-	if len(group.errorCounter) >= m {
+	wg.Wait()
+	close(stop)
+	if errorCounter >= maxErrorsCount {
 		return ErrErrorsLimitExceeded
 	}
-	group.stopWorkers()
 	return nil
 }

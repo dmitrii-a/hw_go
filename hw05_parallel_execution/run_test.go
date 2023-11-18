@@ -182,4 +182,19 @@ func TestRun(t *testing.T) {
 			return atomic.LoadInt32(&runTasksCount) == int32(tasksCount)
 		}, sumTime/2, 10*time.Millisecond, "not all tasks were completed, tasks were run sequentially")
 	})
+
+	t.Run("With nil tasks", func(t *testing.T) {
+		tasksCount := 5
+		tasks := make([]Task, 0, tasksCount)
+
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, nil)
+		}
+
+		workersCount := 0
+		maxErrorsCount := 1
+
+		err := Run(tasks, workersCount, maxErrorsCount)
+		require.Equal(t, ErrNoWorkers, err)
+	})
 }
