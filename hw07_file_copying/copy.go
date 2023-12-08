@@ -2,10 +2,12 @@ package main
 
 import (
 	"errors"
-	"github.com/cheggaaa/pb/v3"
 	"io"
+	"log"
 	"math"
 	"os"
+
+	"github.com/cheggaaa/pb/v3"
 )
 
 var (
@@ -47,12 +49,13 @@ func validate(src *os.File, offset int64, limit int64) (srcParams, error) {
 	}
 	return params, err
 }
+
 func openFiles(fromPath, toPath string) (*os.File, *os.File, error) {
-	src, err := os.OpenFile(fromPath, os.O_RDONLY, 0744)
+	src, err := os.OpenFile(fromPath, os.O_RDONLY, 0o744)
 	if err != nil {
 		return nil, nil, err
 	}
-	dst, err := os.OpenFile(toPath, os.O_CREATE|os.O_WRONLY, 0744)
+	dst, err := os.OpenFile(toPath, os.O_CREATE|os.O_WRONLY, 0o744)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -82,8 +85,18 @@ func execute(src, dst *os.File, params srcParams) error {
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
 	src, dst, err := openFiles(fromPath, toPath)
-	defer src.Close()
-	defer dst.Close()
+	defer func(src *os.File) {
+		err := src.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(src)
+	defer func(dst *os.File) {
+		err := dst.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(dst)
 	if err != nil {
 		return err
 	}
