@@ -55,7 +55,7 @@ func openFiles(fromPath, toPath string) (*os.File, *os.File, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	dst, err := os.OpenFile(toPath, os.O_CREATE|os.O_WRONLY, 0o744)
+	dst, err := os.OpenFile(toPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o744)
 	if err != nil {
 		return nil, nil, err
 	}
