@@ -19,7 +19,7 @@ type EnvValue struct {
 	NeedRemove bool
 }
 
-var InvalidFileName = errors.New("invalid file name")
+var ErrInvalidFileName = errors.New("invalid file name")
 
 func readFile(path string) (string, error) {
 	f, err := os.Open(path)
@@ -57,7 +57,7 @@ func ReadDir(dir string) (Environment, error) {
 			return env, err
 		}
 		if strings.Contains(fileInfo.Name(), "=") {
-			return env, InvalidFileName
+			return env, ErrInvalidFileName
 		}
 		env[info.Name()] = EnvValue{
 			Value:      v,

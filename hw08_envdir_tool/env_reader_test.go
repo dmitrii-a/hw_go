@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestReadDir(t *testing.T) {
@@ -34,7 +35,7 @@ func TestReadDir(t *testing.T) {
 		_, err = os.Create(path.Join(dir, "test=test"))
 		require.NoError(t, err)
 		result, err := ReadDir(dir)
-		require.Equal(t, err, InvalidFileName)
+		require.Equal(t, err, ErrInvalidFileName)
 		require.Empty(t, result)
 	})
 
