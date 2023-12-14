@@ -37,7 +37,7 @@ func readFile(path string) (string, error) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return "", err
 	}
-	v := bytes.ReplaceAll(line, []byte("/x00"), []byte("\n"))
+	v := bytes.ReplaceAll(line, []byte("\x00"), []byte("\n"))
 	v = bytes.TrimRight(v, " \t\n")
 	return string(v), nil
 }

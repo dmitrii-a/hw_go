@@ -56,7 +56,7 @@ func TestReadDir(t *testing.T) {
 				require.NoError(t, err)
 			}
 		}(file)
-		_, err = file.WriteString("test/x00data /x00")
+		_, err = file.WriteString("test\x00data \x00")
 		require.NoError(t, err)
 		result, err := ReadDir(dir)
 		require.NoError(t, err)
