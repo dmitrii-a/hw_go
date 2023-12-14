@@ -85,21 +85,27 @@ func execute(src, dst *os.File, params srcParams) error {
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
 	src, dst, err := openFiles(fromPath, toPath)
+	if err != nil {
+		return err
+	}
 	defer func(src *os.File) {
+		if src == nil {
+			return
+		}
 		err := src.Close()
 		if err != nil {
 			log.Println(err)
 		}
 	}(src)
 	defer func(dst *os.File) {
+		if dst == nil {
+			return
+		}
 		err := dst.Close()
 		if err != nil {
 			log.Println(err)
 		}
 	}(dst)
-	if err != nil {
-		return err
-	}
 	params, err := validate(src, offset, limit)
 	if err != nil {
 		return err
