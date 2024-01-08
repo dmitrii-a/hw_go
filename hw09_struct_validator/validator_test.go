@@ -37,6 +37,10 @@ type (
 		Code int    `validate:"in:200,404,500"`
 		Body string `json:"omitempty"`
 	}
+
+	InCorrectAppLen struct {
+		Version string `validate:"len:sdfsdf"`
+	}
 )
 
 func TestValidate(t *testing.T) {
@@ -142,6 +146,13 @@ func TestValidate(t *testing.T) {
 				Body: "",
 			},
 			expectedErr: ValidationErrors{{Field: "Code", Err: ErrValueNotIn}},
+		},
+		{
+			name: "incorrect validator type",
+			in: InCorrectAppLen{
+				Version: "1.0.0",
+			},
+			expectedErr: ValidationErrors{{Field: "Version", Err: ErrIncorrectType}},
 		},
 	}
 
