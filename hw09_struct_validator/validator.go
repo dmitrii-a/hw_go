@@ -60,28 +60,68 @@ func IsDigit(s string) bool {
 
 func validateField(fieldValue reflect.Value, name string, tags string) ValidationErrors {
 	var validationErrors ValidationErrors
+	var fieldValidateFunc func(value reflect.Value) ValidationErrors
 	for _, tag := range strings.Split(tags, separator) {
 		switch {
 		case strings.HasPrefix(tag, lenTagValidator):
-			validationErrors = append(validationErrors, validateLenTag(name, tag, fieldValue)...)
+			length, err := strconv.Atoi(strings.TrimPrefix(tag, lenTagValidator))
+			if err != nil {
+				validationErrors = append(validationErrors, ValidationError{Field: name, Err: ErrInvalidLength})
+				continue
+			}
+			fieldValidateFunc = func(value reflect.Value) ValidationErrors {
+				return validateLenTag(name, length, value)
+			}
 		case strings.HasPrefix(tag, regexpTagValidator):
-			validationErrors = append(validationErrors, validateRegexpTag(name, tag, fieldValue)...)
+			pattern := strings.TrimPrefix(tag, regexpTagValidator)
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				validationErrors = append(validationErrors, ValidationError{Field: name, Err: ErrInvalidRegexp})
+				continue
+			}
+			fieldValidateFunc = func(value reflect.Value) ValidationErrors {
+				return validateRegexpTag(name, re, value)
+			}
 		case strings.HasPrefix(tag, inTagValidator):
-			validationErrors = append(validationErrors, validateInTag(name, tag, fieldValue)...)
+			data := strings.Split(strings.TrimPrefix(tag, inTagValidator), valueSeparator)
+			isDigitData := len(data) == 2 && IsDigit(data[0]) && IsDigit(data[1])
+			fieldValidateFunc = func(value reflect.Value) ValidationErrors {
+				return validateInTag(name, data, isDigitData, value)
+			}
 		case strings.HasPrefix(tag, minTagValidator):
-			validationErrors = append(validationErrors, validateMinTag(name, tag, fieldValue)...)
+			length, err := strconv.Atoi(strings.TrimPrefix(tag, minTagValidator))
+			if err != nil {
+				validationErrors = append(validationErrors, ValidationError{Field: name, Err: ErrInvalidMin})
+				continue
+			}
+			fieldValidateFunc = func(value reflect.Value) ValidationErrors {
+				return validateMinTag(name, length, value)
+			}
 		case strings.HasPrefix(tag, maxTagValidator):
-			validationErrors = append(validationErrors, validateMaxTag(name, tag, fieldValue)...)
+			length, err := strconv.Atoi(strings.TrimPrefix(tag, maxTagValidator))
+			if err != nil {
+				validationErrors = append(validationErrors, ValidationError{Field: name, Err: ErrInvalidMax})
+				continue
+			}
+			fieldValidateFunc = func(value reflect.Value) ValidationErrors {
+				return validateMaxTag(name, length, value)
+			}
+		}
+		if fieldValue.Kind() == reflect.Slice {
+			for i := 0; i < fieldValue.Len(); i++ {
+				validationErrors = append(validationErrors, fieldValidateFunc(fieldValue.Index(i))...)
+			}
+		} else {
+			validationErrors = append(validationErrors, fieldValidateFunc(fieldValue)...)
 		}
 	}
 	return validationErrors
 }
 
-func validateLenTag(name, tag string, fieldValue reflect.Value) ValidationErrors {
+func validateLenTag(name string, length int, fieldValue reflect.Value) ValidationErrors {
 	var validationErrors ValidationErrors
-	length, err := strconv.Atoi(strings.TrimPrefix(tag, lenTagValidator))
-	if err != nil {
-		validationErrors = append(validationErrors, ValidationError{Field: name, Err: ErrInvalidLength})
+	if fieldValue.Kind() != reflect.String {
+		return validationErrors
 	}
 	if fieldValue.Len() != length {
 		validationErrors = append(
@@ -94,25 +134,27 @@ func validateLenTag(name, tag string, fieldValue reflect.Value) ValidationErrors
 	return validationErrors
 }
 
-func validateInTag(name, tag string, fieldValue reflect.Value) ValidationErrors {
+func validateInTag(name string, data []string, isDigitData bool, fieldValue reflect.Value) ValidationErrors {
 	var validationErrors ValidationErrors
-	s := strings.Split(strings.TrimPrefix(tag, inTagValidator), valueSeparator)
+	if fieldValue.Kind() != reflect.String && fieldValue.Kind() != reflect.Int {
+		return validationErrors
+	}
 	isMatch := false
-	if len(s) == 2 && IsDigit(s[0]) && IsDigit(s[1]) {
-		minValue, err := strconv.Atoi(s[0])
+	if isDigitData {
+		minValue, err := strconv.Atoi(data[0])
 		if err != nil {
 			validationErrors = append(
 				validationErrors, ValidationError{
 					Field: name,
-					Err:   fmt.Errorf("%w%v", ErrInvalidValue, s[0]),
+					Err:   fmt.Errorf("%w%v", ErrInvalidValue, data[0]),
 				},
 			)
 		}
-		maxValue, err := strconv.Atoi(s[1])
+		maxValue, err := strconv.Atoi(data[1])
 		if err != nil {
 			validationErrors = append(
 				validationErrors, ValidationError{
-					Field: name, Err: fmt.Errorf("%w%v", ErrInvalidValue, s[1]),
+					Field: name, Err: fmt.Errorf("%w%v", ErrInvalidValue, data[1]),
 				},
 			)
 		}
@@ -120,7 +162,7 @@ func validateInTag(name, tag string, fieldValue reflect.Value) ValidationErrors 
 			isMatch = true
 		}
 	}
-	for _, v := range s {
+	for _, v := range data {
 		if fmt.Sprint(fieldValue) == v {
 			isMatch = true
 		}
@@ -129,36 +171,34 @@ func validateInTag(name, tag string, fieldValue reflect.Value) ValidationErrors 
 		validationErrors = append(
 			validationErrors,
 			ValidationError{
-				Field: name, Err: fmt.Errorf("%w%v", ErrValueNotIn, s),
+				Field: name, Err: fmt.Errorf("%w%v", ErrValueNotIn, data),
 			},
 		)
 	}
 	return validationErrors
 }
 
-func validateRegexpTag(name, tag string, fieldValue reflect.Value) ValidationErrors {
+func validateRegexpTag(name string, re *regexp.Regexp, fieldValue reflect.Value) ValidationErrors {
 	var validationErrors ValidationErrors
-	pattern := strings.TrimPrefix(tag, regexpTagValidator)
-	re, err := regexp.MatchString(pattern, fieldValue.String())
-	if err != nil {
-		validationErrors = append(validationErrors, ValidationError{Field: name, Err: ErrInvalidRegexp})
+	if fieldValue.Kind() != reflect.String {
+		return validationErrors
 	}
-	if !re {
+	match := re.MatchString(fieldValue.String())
+	if !match {
 		validationErrors = append(
 			validationErrors,
 			ValidationError{
-				Field: name, Err: fmt.Errorf("%w%v", ErrRegexpNotMatch, pattern),
+				Field: name, Err: fmt.Errorf("%w%v", ErrRegexpNotMatch, re.String()),
 			},
 		)
 	}
 	return validationErrors
 }
 
-func validateMinTag(name, tag string, fieldValue reflect.Value) ValidationErrors {
+func validateMinTag(name string, length int, fieldValue reflect.Value) ValidationErrors {
 	var validationErrors ValidationErrors
-	length, err := strconv.Atoi(strings.TrimPrefix(tag, minTagValidator))
-	if err != nil {
-		validationErrors = append(validationErrors, ValidationError{Field: name, Err: ErrInvalidMin})
+	if fieldValue.Kind() != reflect.Int {
+		return validationErrors
 	}
 	if val, ok := fieldValue.Interface().(int); ok && val < length {
 		validationErrors = append(
@@ -171,11 +211,10 @@ func validateMinTag(name, tag string, fieldValue reflect.Value) ValidationErrors
 	return validationErrors
 }
 
-func validateMaxTag(name, tag string, fieldValue reflect.Value) ValidationErrors {
+func validateMaxTag(name string, length int, fieldValue reflect.Value) ValidationErrors {
 	var validationErrors ValidationErrors
-	length, err := strconv.Atoi(strings.TrimPrefix(tag, maxTagValidator))
-	if err != nil {
-		validationErrors = append(validationErrors, ValidationError{Field: name, Err: ErrInvalidMax})
+	if fieldValue.Kind() != reflect.Int {
+		return validationErrors
 	}
 	if val, ok := fieldValue.Interface().(int); ok && val > length {
 		validationErrors = append(
@@ -201,15 +240,8 @@ func Validate(v interface{}) error {
 		if tag == "" {
 			continue
 		}
-		if fieldType.Type.Kind() == reflect.Slice {
-			for i := 0; i < fieldValue.Len(); i++ {
-				err := validateField(fieldValue.Index(i), fieldType.Name, tag)
-				validationErrors = append(validationErrors, err...)
-			}
-		} else {
-			err := validateField(fieldValue, fieldType.Name, tag)
-			validationErrors = append(validationErrors, err...)
-		}
+		err := validateField(fieldValue, fieldType.Name, tag)
+		validationErrors = append(validationErrors, err...)
 	}
 	if len(validationErrors) > 0 {
 		return validationErrors
