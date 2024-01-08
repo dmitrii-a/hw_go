@@ -79,6 +79,24 @@ func IsDigit(s string) bool {
 	return true
 }
 
+func processValidateField(
+	fieldValue reflect.Value,
+	fieldValidateFunc func(value reflect.Value) error,
+	validatorErrors ValidatorErrors,
+	validationErrors ValidationErrors,
+) (ValidationErrors, ValidatorErrors) {
+	err := fieldValidateFunc(fieldValue)
+	var vrError ValidatorError
+	var vnErrors ValidationErrors
+	switch {
+	case errors.As(err, &vrError):
+		validatorErrors = append(validatorErrors, vrError)
+	case errors.As(err, &vnErrors):
+		validationErrors = append(validationErrors, vnErrors...)
+	}
+	return validationErrors, validatorErrors
+}
+
 func validateField(fieldValue reflect.Value, name string, tags string) ValidationErrors {
 	var validationErrors ValidationErrors
 	var validatorErrors ValidatorErrors
@@ -96,26 +114,14 @@ func validateField(fieldValue reflect.Value, name string, tags string) Validatio
 		}
 		if fieldValue.Kind() == reflect.Slice {
 			for i := 0; i < fieldValue.Len(); i++ {
-				err := fieldValidateFunc(fieldValue.Index(i))
-				var vrError ValidatorError
-				var vnErrors ValidationErrors
-				switch {
-				case errors.As(err, &vrError):
-					validatorErrors = append(validatorErrors, vrError)
-				case errors.As(err, &vnErrors):
-					validationErrors = append(validationErrors, vnErrors...)
-				}
+				validationErrors, validatorErrors = processValidateField(
+					fieldValue.Index(i), fieldValidateFunc, validatorErrors, validationErrors,
+				)
 			}
 		} else {
-			err := fieldValidateFunc(fieldValue)
-			var vrError ValidatorError
-			var vnErrors ValidationErrors
-			switch {
-			case errors.As(err, &vrError):
-				validatorErrors = append(validatorErrors, vrError)
-			case errors.As(err, &vnErrors):
-				validationErrors = append(validationErrors, vnErrors...)
-			}
+			validationErrors, validatorErrors = processValidateField(
+				fieldValue, fieldValidateFunc, validatorErrors, validationErrors,
+			)
 		}
 	}
 	if len(validatorErrors) > 0 {
