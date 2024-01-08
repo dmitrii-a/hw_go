@@ -13,6 +13,7 @@ const (
 	validateTag        = "validate"
 	separator          = "|"
 	valueSeparator     = ","
+	tagSeparator       = ":"
 	lenTagValidator    = "len"
 	inTagValidator     = "in"
 	regexpTagValidator = "regexp"
@@ -265,7 +266,7 @@ func validateField(fieldValue reflect.Value, name string, tags string) Validatio
 	var validationErrors ValidationErrors
 	var validatorErrors ValidatorErrors
 	for _, tag := range strings.Split(tags, separator) {
-		splitTag := strings.Split(tag, ":")
+		splitTag := strings.Split(tag, tagSeparator)
 		if len(splitTag) < 2 {
 			validatorErrors = append(validatorErrors, ValidatorError{Field: name, Err: ErrIncorrectValidator})
 		}
