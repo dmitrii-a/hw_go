@@ -1,3 +1,4 @@
+//nolint:funlen,gocognit
 package hw09structvalidator
 
 import (
@@ -152,13 +153,34 @@ func TestValidate(t *testing.T) {
 			in: InCorrectAppLen{
 				Version: "1.0.0",
 			},
-			expectedErr: ValidationErrors{{Field: "Version", Err: ErrIncorrectType}},
+			expectedErr: ValidatorErrors{{Field: "Version", Err: ErrInvalidLength}},
 		},
 	}
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
 			tt := tt
+			defer func() {
+				r := recover()
+				var validatorErrors ValidatorErrors
+				isValidatorErrors := errors.As(tt.expectedErr, &validatorErrors)
+				if isValidatorErrors && r == nil {
+					t.Errorf("The code did not panic")
+				}
+				if r != nil && isValidatorErrors {
+					var validationErrorsFromValidate ValidatorErrors
+					ok := errors.As(r.(error), &validationErrorsFromValidate)
+					if ok {
+						for i, err := range validatorErrors {
+							require.Contains(t, validationErrorsFromValidate[i].Field, err.Field)
+							require.ErrorIs(t, validationErrorsFromValidate[i].Err, err.Err)
+						}
+					}
+				}
+				if r != nil && !errors.As(tt.expectedErr, &ValidatorErrors{}) {
+					t.Errorf("The code panicked with %v", r)
+				}
+			}()
 			t.Parallel()
 			errFromValidate := Validate(tt.in)
 			if tt.expectedErr == nil {
