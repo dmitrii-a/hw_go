@@ -31,11 +31,10 @@ func getStat(r io.Reader, domain string) (DomainStat, error) {
 		if err := easyjson.Unmarshal(scanner.Bytes(), &user); err != nil {
 			return nil, err
 		}
-		splitEmail := strings.Split(user.Email, ".")
-		if len(splitEmail) < 2 {
+		if len(strings.Split(user.Email, ".")) < 2 {
 			return nil, fmt.Errorf("invalid email(without domain): %s", user.Email)
 		}
-		if splitEmail[len(splitEmail)-1] == domain {
+		if strings.HasSuffix(user.Email, domain) {
 			emailParts := strings.SplitN(user.Email, "@", 2)
 			if len(emailParts) < 2 {
 				return nil, fmt.Errorf("invalid email(without @): %s", user.Email)
