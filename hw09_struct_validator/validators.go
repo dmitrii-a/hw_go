@@ -15,105 +15,82 @@ func IsDigit(s string) bool {
 	return true
 }
 
-func validateLenTag(name string, length int, fieldValue reflect.Value) error {
-	if fieldValue.Kind() != reflect.String {
-		return ValidatorError{Field: name, Err: ErrIncorrectType}
+func validateTypeTag(name string, validator string, fieldValue reflect.Value) *ValidatorError {
+	fieldType := fieldValue.Kind()
+	if fieldType == reflect.Slice {
+		fieldType = fieldValue.Type().Elem().Kind()
 	}
-	var validationErrors ValidationErrors
-	if fieldValue.Len() != length {
-		validationErrors = append(
-			validationErrors,
-			ValidationError{
-				Field: name, Err: fmt.Errorf("%w%v", ErrNotEqualLength, length),
-			},
-		)
+	err := &ValidatorError{Field: name, Err: ErrIncorrectType}
+	switch {
+	case validator == lenTagValidator:
+		if fieldType != reflect.String {
+			return err
+		}
+	case validator == regexpTagValidator:
+		if fieldType != reflect.String {
+			return err
+		}
+	case validator == inTagValidator:
+		if fieldType != reflect.String && fieldType != reflect.Int {
+			return err
+		}
+	case validator == minTagValidator:
+		if fieldType != reflect.Int {
+			return err
+		}
+	case validator == maxTagValidator:
+		if fieldType != reflect.Int {
+			return err
+		}
 	}
-	return validationErrors
+	return nil
 }
 
-func validateIntInTag(name string, minValue int, maxValue int, fieldValue reflect.Value) error {
-	if fieldValue.Kind() != reflect.String && fieldValue.Kind() != reflect.Int {
-		return ValidatorError{Field: name, Err: ErrIncorrectType}
+func validateLenTag(name string, length int, value string) *ValidationError {
+	if len([]rune(value)) != length {
+		return &ValidationError{Field: name, Err: fmt.Errorf("%w%v", ErrNotEqualLength, length)}
 	}
-	var validationErrors ValidationErrors
-	if fieldValue.Len() >= minValue && fieldValue.Len() <= maxValue {
-		validationErrors = append(
-			validationErrors,
-			ValidationError{
-				Field: name, Err: fmt.Errorf("%w%v %v", ErrValueNotIn, minValue, maxValue),
-			},
-		)
-	}
-	return validationErrors
+	return nil
 }
 
-func validateStringInTag(name string, data []string, fieldValue reflect.Value) error {
-	if fieldValue.Kind() != reflect.String && fieldValue.Kind() != reflect.Int {
-		return ValidatorError{Field: name, Err: ErrIncorrectType}
+func validateIntInTag(name string, minValue int64, maxValue int64, value int64) *ValidationError {
+	if value >= minValue && value <= maxValue {
+		return &ValidationError{Field: name, Err: fmt.Errorf("%w%v %v", ErrValueNotIn, minValue, maxValue)}
 	}
-	var validationErrors ValidationErrors
+	return nil
+}
+
+func validateStringInTag(name string, data []string, value string) *ValidationError {
 	isMatch := false
 	for _, v := range data {
-		if fmt.Sprint(fieldValue) == v {
+		if value == v {
 			isMatch = true
 		}
 	}
 	if !isMatch {
-		validationErrors = append(
-			validationErrors,
-			ValidationError{
-				Field: name, Err: fmt.Errorf("%w%v", ErrValueNotIn, data),
-			},
-		)
+		return &ValidationError{Field: name, Err: fmt.Errorf("%w%v", ErrValueNotIn, data)}
 	}
-	return validationErrors
+	return nil
 }
 
-func validateRegexpTag(name string, re *regexp.Regexp, fieldValue reflect.Value) error {
-	if fieldValue.Kind() != reflect.String {
-		return ValidatorError{Field: name, Err: ErrIncorrectType}
-	}
-	var validationErrors ValidationErrors
-	match := re.MatchString(fieldValue.String())
+func validateRegexpTag(name string, re *regexp.Regexp, value string) *ValidationError {
+	match := re.MatchString(value)
 	if !match {
-		validationErrors = append(
-			validationErrors,
-			ValidationError{
-				Field: name, Err: fmt.Errorf("%w%v", ErrRegexpNotMatch, re.String()),
-			},
-		)
+		return &ValidationError{Field: name, Err: fmt.Errorf("%w%v", ErrRegexpNotMatch, re.String())}
 	}
-	return validationErrors
+	return nil
 }
 
-func validateMinTag(name string, length int, fieldValue reflect.Value) error {
-	if fieldValue.Kind() != reflect.Int {
-		return ValidatorError{Field: name, Err: ErrIncorrectType}
+func validateMinTag(name string, length int64, value int64) *ValidationError {
+	if value < length {
+		return &ValidationError{Field: name, Err: fmt.Errorf("%w%v", ErrValueLessThanMin, length)}
 	}
-	var validationErrors ValidationErrors
-	if val, ok := fieldValue.Interface().(int); ok && val < length {
-		validationErrors = append(
-			validationErrors,
-			ValidationError{
-				Field: name, Err: fmt.Errorf("%w%v", ErrValueLessThanMin, length),
-			},
-		)
-	}
-	return validationErrors
+	return nil
 }
 
-func validateMaxTag(name string, length int, fieldValue reflect.Value) error {
-	if fieldValue.Kind() != reflect.Int {
-		return ValidatorError{Field: name, Err: ErrIncorrectType}
+func validateMaxTag(name string, length int64, value int64) *ValidationError {
+	if value > length {
+		return &ValidationError{Field: name, Err: fmt.Errorf("%w%v", ErrValueMoreThanMax, length)}
 	}
-	var validationErrors ValidationErrors
-	if val, ok := fieldValue.Interface().(int); ok && val > length {
-		validationErrors = append(
-			validationErrors,
-			ValidationError{
-				Field: name, Err: fmt.Errorf("%w%v", ErrValueMoreThanMax, length),
-			},
-		)
-	}
-	return validationErrors
+	return nil
 }

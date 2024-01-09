@@ -26,6 +26,10 @@ type ValidationError struct {
 	Err   error
 }
 
+func (v ValidationError) Error() string {
+	return fmt.Sprintf("%s: %s\n", v.Field, v.Err.Error())
+}
+
 type ValidatorError struct {
 	Field string
 	Err   error
@@ -40,7 +44,7 @@ type ValidationErrors []ValidationError
 func (v ValidationErrors) Error() string {
 	var validationError string
 	for _, err := range v {
-		validationError += fmt.Sprintf("%s: %s\n", err.Field, err.Err.Error())
+		validationError += err.Error()
 	}
 	return validationError
 }
@@ -50,7 +54,7 @@ type ValidatorErrors []ValidatorError
 func (v ValidatorErrors) Error() string {
 	var validatorError string
 	for _, err := range v {
-		validatorError += fmt.Sprintf("%s: %s\n", err.Field, err.Err.Error())
+		validatorError += err.Error()
 	}
 	return validatorError
 }

@@ -1,7 +1,6 @@
 package hw09structvalidator
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -9,34 +8,37 @@ import (
 	"strings"
 )
 
-type validateFieldFunc func(value reflect.Value) error
+type validateFieldFunc func(value reflect.Value) *ValidationError
 
 func getFieldValidateFunc(
 	name string,
-	validator,
+	validator string,
 	validatorValue string,
+	fieldValue reflect.Value,
 ) (validateFieldFunc, *ValidatorError) {
+	if vrError := validateTypeTag(name, validator, fieldValue); vrError != nil {
+		return nil, vrError
+	}
 	switch {
 	case validator == lenTagValidator:
 		length, err := strconv.Atoi(validatorValue)
 		if err != nil {
 			return nil, &ValidatorError{Field: name, Err: ErrInvalidLength}
 		}
-		return func(value reflect.Value) error {
-			return validateLenTag(name, length, value)
+		return func(value reflect.Value) *ValidationError {
+			return validateLenTag(name, length, value.String())
 		}, nil
 	case validator == regexpTagValidator:
 		re, err := regexp.Compile(validatorValue)
 		if err != nil {
 			return nil, &ValidatorError{Field: name, Err: ErrInvalidRegexp}
 		}
-		return func(value reflect.Value) error {
-			return validateRegexpTag(name, re, value)
+		return func(value reflect.Value) *ValidationError {
+			return validateRegexpTag(name, re, value.String())
 		}, nil
 	case validator == inTagValidator:
 		data := strings.Split(validatorValue, valueSeparator)
-		isDigitData := len(data) == 2 && IsDigit(data[0]) && IsDigit(data[1])
-		if isDigitData {
+		if len(data) == 2 && IsDigit(data[0]) && IsDigit(data[1]) {
 			minValue, err := strconv.Atoi(data[0])
 			if err != nil {
 				return nil, &ValidatorError{Field: name, Err: fmt.Errorf("%w%v", ErrInvalidValue, data[0])}
@@ -45,82 +47,60 @@ func getFieldValidateFunc(
 			if err != nil {
 				return nil, &ValidatorError{Field: name, Err: fmt.Errorf("%w%v", ErrInvalidValue, data[1])}
 			}
-			return func(value reflect.Value) error {
-				return validateIntInTag(name, minValue, maxValue, value)
+			return func(value reflect.Value) *ValidationError {
+				return validateIntInTag(name, int64(minValue), int64(maxValue), value.Int())
 			}, nil
 		}
-		return func(value reflect.Value) error {
-			return validateStringInTag(name, data, value)
+		return func(value reflect.Value) *ValidationError {
+			return validateStringInTag(name, data, fmt.Sprint(fieldValue))
 		}, nil
 	case validator == minTagValidator:
 		length, err := strconv.Atoi(validatorValue)
 		if err != nil {
 			return nil, &ValidatorError{Field: name, Err: ErrInvalidMin}
 		}
-		return func(value reflect.Value) error {
-			return validateMinTag(name, length, value)
+		return func(value reflect.Value) *ValidationError {
+			return validateMinTag(name, int64(length), value.Int())
 		}, nil
 	case validator == maxTagValidator:
 		length, err := strconv.Atoi(validatorValue)
 		if err != nil {
 			return nil, &ValidatorError{Field: name, Err: ErrInvalidMax}
 		}
-		return func(value reflect.Value) error {
-			return validateMaxTag(name, length, value)
+		return func(value reflect.Value) *ValidationError {
+			return validateMaxTag(name, int64(length), value.Int())
 		}, nil
 	}
 	return nil, nil
 }
 
-func processValidateField(
-	fieldValue reflect.Value,
-	fieldValidateFunc validateFieldFunc,
-	validationErrors ValidationErrors,
-	validatorErrors ValidatorErrors,
-) (ValidationErrors, ValidatorErrors) {
-	err := fieldValidateFunc(fieldValue)
-	var vrError ValidatorError
-	var vnErrors ValidationErrors
-	switch {
-	case errors.As(err, &vrError):
-		validatorErrors = append(validatorErrors, vrError)
-	case errors.As(err, &vnErrors):
-		validationErrors = append(validationErrors, vnErrors...)
-	}
-	return validationErrors, validatorErrors
-}
-
-func validateField(fieldValue reflect.Value, name string, tags string) ValidationErrors {
+func validateField(fieldValue reflect.Value, name string, tags string) (ValidationErrors, ValidatorErrors) {
 	var validationErrors ValidationErrors
 	var validatorErrors ValidatorErrors
 	for _, tag := range strings.Split(tags, separator) {
 		splitTag := strings.Split(tag, tagSeparator)
 		if len(splitTag) < 2 {
 			validatorErrors = append(validatorErrors, ValidatorError{Field: name, Err: ErrIncorrectValidator})
+			continue
 		}
-		validator := splitTag[0]
-		validatorValue := splitTag[1]
-		fieldValidateFunc, validatorError := getFieldValidateFunc(name, validator, validatorValue)
+		fieldValidateFunc, validatorError := getFieldValidateFunc(name, splitTag[0], splitTag[1], fieldValue)
 		if validatorError != nil {
 			validatorErrors = append(validatorErrors, *validatorError)
 			continue
 		}
 		if fieldValue.Kind() == reflect.Slice {
 			for i := 0; i < fieldValue.Len(); i++ {
-				validationErrors, validatorErrors = processValidateField(
-					fieldValue.Index(i), fieldValidateFunc, validationErrors, validatorErrors,
-				)
+				if err := fieldValidateFunc(fieldValue.Index(i)); err != nil {
+					validationErrors = append(validationErrors, *err)
+				}
 			}
 		} else {
-			validationErrors, validatorErrors = processValidateField(
-				fieldValue, fieldValidateFunc, validationErrors, validatorErrors,
-			)
+			if err := fieldValidateFunc(fieldValue); err != nil {
+				validationErrors = append(validationErrors, *err)
+			}
 		}
 	}
-	if len(validatorErrors) > 0 {
-		panic(validatorErrors)
-	}
-	return validationErrors
+	return validationErrors, validatorErrors
 }
 
 func Validate(v interface{}) error {
@@ -136,8 +116,11 @@ func Validate(v interface{}) error {
 		if tag == "" {
 			continue
 		}
-		err := validateField(fieldValue, fieldType.Name, tag)
-		validationErrors = append(validationErrors, err...)
+		vnErrors, vrErrors := validateField(fieldValue, fieldType.Name, tag)
+		if vrErrors != nil {
+			return vrErrors
+		}
+		validationErrors = append(validationErrors, vnErrors...)
 	}
 	if len(validationErrors) > 0 {
 		return validationErrors
