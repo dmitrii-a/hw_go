@@ -1,3 +1,4 @@
+//go:build !bench
 // +build !bench
 
 package hw10programoptimization
@@ -15,6 +16,9 @@ func TestGetDomainStat(t *testing.T) {
 {"Id":3,"Name":"Clarence Olson","Username":"RachelAdams","Email":"RoseSmith@Browsecat.com","Phone":"988-48-97","Password":"71kuz3gA5w","Address":"Monterey Park 39"}
 {"Id":4,"Name":"Gregory Reid","Username":"tButler","Email":"5Moore@Teklist.net","Phone":"520-04-16","Password":"r639qLNu","Address":"Sunfield Park 20"}
 {"Id":5,"Name":"Janice Rose","Username":"KeithHart","Email":"nulla@Linktype.com","Phone":"146-91-01","Password":"acSBF5","Address":"Russell Trail 61"}`
+	invalidEmailData := `{"mail: "invalid email"}`
+	invalidEmailWithoutPart := `{"Email: "test.test.com"}`
+	invalidEmailWithoutDomain := `{"Email":"test@test"}`
 
 	t.Run("find 'com'", func(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(data), "com")
@@ -31,9 +35,30 @@ func TestGetDomainStat(t *testing.T) {
 		require.Equal(t, DomainStat{"browsedrive.gov": 1}, result)
 	})
 
+	t.Run("find 'net'", func(t *testing.T) {
+		result, err := GetDomainStat(bytes.NewBufferString(data), "net")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{"teklist.net": 1}, result)
+	})
+
 	t.Run("find 'unknown'", func(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(data), "unknown")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("invalid data", func(t *testing.T) {
+		_, err := GetDomainStat(bytes.NewBufferString(invalidEmailData), "com")
+		require.Error(t, err)
+	})
+
+	t.Run("invalid email without @", func(t *testing.T) {
+		_, err := GetDomainStat(bytes.NewBufferString(invalidEmailWithoutPart), "com")
+		require.Error(t, err)
+	})
+
+	t.Run("invalid email without domain", func(t *testing.T) {
+		_, err := GetDomainStat(bytes.NewBufferString(invalidEmailWithoutDomain), "com")
+		require.Error(t, err)
 	})
 }
