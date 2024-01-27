@@ -33,7 +33,7 @@ GetDomainStat(r, "edu") // {"quinu": 1}
 
 **Обратите внимание на запуск TestGetDomainStat_Time_And_Memory**
 ```bash
-go test -v -count=1 -timeout=30s -tags bench .
+go tests -v -count=1 -timeout=30s -tags bench .
 ```
 
 Здесь используется билд-тэг bench, чтобы отделить обычные тесты от тестов производительности.

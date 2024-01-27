@@ -1,0 +1,14 @@
+# Config file for calendar service
+APP:
+  HOST: '127.0.0.1'
+  PORT: 8081
+  DEBUG: true
+  LOG_LEVEL: 'info'
+  SHUTDOWN_TIMEOUT_SECOND: 30
+DB:
+  USERNAME: 'admin'
+  PASSWORD: 'password'
+  DATABASE: 'calendar-service'
+  HOST: '127.0.0.1'
+  PORT: 5432
+  SSL_MODE: 'disable'

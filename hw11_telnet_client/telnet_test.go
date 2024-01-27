@@ -64,17 +64,17 @@ func TestTelnetClient(t *testing.T) {
 	t.Run("invalid host:port", func(t *testing.T) {
 		in := &bytes.Buffer{}
 		out := &bytes.Buffer{}
-		client := NewTelnetClient("test:test", time.Duration(10), io.NopCloser(in), out)
+		client := NewTelnetClient("tests:tests", time.Duration(10), io.NopCloser(in), out)
 		require.Error(t, client.Connect())
 	})
 	t.Run("in is nil", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		client := NewTelnetClient("test:test", time.Duration(10), nil, out)
+		client := NewTelnetClient("tests:tests", time.Duration(10), nil, out)
 		require.Error(t, client.Connect())
 	})
 	t.Run("out is nil", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		client := NewTelnetClient("test:test", time.Duration(10), nil, out)
+		client := NewTelnetClient("tests:tests", time.Duration(10), nil, out)
 		require.Error(t, client.Connect())
 	})
 	t.Run("receive data from server", func(t *testing.T) {

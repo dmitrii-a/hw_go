@@ -44,39 +44,39 @@ func TestTop10(t *testing.T) {
 	t.Run("no words in empty string", func(t *testing.T) {
 		require.Len(t, Top10(""), 0)
 	})
-	t.Run("test with two words with punctuation marks", func(t *testing.T) {
+	t.Run("tests with two words with punctuation marks", func(t *testing.T) {
 		expected := []string{
 			"мир",
 			"привет",
 		}
 		require.Equal(t, expected, Top10("Привет!, мир"))
 	})
-	t.Run("test with punctuation marks and letter case", func(t *testing.T) {
+	t.Run("tests with punctuation marks and letter case", func(t *testing.T) {
 		expected := []string{
 			"привет",
 			"мир",
 		}
 		require.Equal(t, expected, Top10("Привет! привет. Привет, Привет: мир мир мир"))
 	})
-	t.Run("test with exclude symbol '-'", func(t *testing.T) {
+	t.Run("tests with exclude symbol '-'", func(t *testing.T) {
 		expected := []string{
 			"мир",
 			"привет",
 		}
 		require.Equal(t, expected, Top10("-! -. -, Привет: мир мир мир"))
 	})
-	t.Run("test with english words", func(t *testing.T) {
+	t.Run("tests with english words", func(t *testing.T) {
 		expected := []string{
 			"hello",
 			"a",
 			"is",
-			"test",
+			"tests",
 			"this",
 			"world",
 		}
-		require.Equal(t, expected, Top10("Hello, hello world! This is a test."))
+		require.Equal(t, expected, Top10("Hello, hello world! This is a tests."))
 	})
-	t.Run("positive test", func(t *testing.T) {
+	t.Run("positive tests", func(t *testing.T) {
 		expected := []string{
 			"а",         // 8
 			"он",        // 8
