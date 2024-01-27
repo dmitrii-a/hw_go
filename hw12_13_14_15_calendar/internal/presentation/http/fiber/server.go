@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/common"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/presentation/http"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/presentation/http/fiber/handlers"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/common"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/presentation/http"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/presentation/http/fiber/handlers"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/pprof"

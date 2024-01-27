@@ -3,7 +3,7 @@ package freecache
 import (
 	"github.com/cespare/xxhash/v2"
 	"github.com/coocood/freecache"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/common"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/common"
 )
 
 // CacheDB is a freecache struct with mutex.

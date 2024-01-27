@@ -4,8 +4,8 @@ package repository
 import (
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/common"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/pkg/freecache"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/common"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/pkg/freecache"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )

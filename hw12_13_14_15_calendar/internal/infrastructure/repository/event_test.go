@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/common"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/domain"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/tests"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/common"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/domain"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/tests"
 	"github.com/go-faker/faker/v4"
 	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/jmoiron/sqlx"

@@ -3,7 +3,7 @@ package common
 import (
 	"flag"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/pkg/logger"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/pkg/logger"
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 )

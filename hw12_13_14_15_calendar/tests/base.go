@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/common"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/common"
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
 	"github.com/stretchr/testify/suite"
