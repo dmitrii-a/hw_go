@@ -1,7 +1,7 @@
 # Config file for calendar service
 APP:
   HOST: '127.0.0.1'
-  PORT: 8081
+  PORT: 8080
   DEBUG: true
   LOG_LEVEL: 'info'
   SHUTDOWN_TIMEOUT_SECOND: 30

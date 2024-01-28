@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/common"
@@ -252,7 +251,6 @@ func (repo *eventCacheRepository) ListEventsForPeriod(
 		// For time equality in if statement
 		startTime = startTime.Add(-time.Millisecond)
 		endTime = endTime.Add(time.Millisecond)
-		fmt.Println(startTime, event.StartTime, endTime, event.EndTime)
 		if event.StartTime.After(startTime) && event.EndTime.Before(endTime) {
 			result = append(result, event)
 		}

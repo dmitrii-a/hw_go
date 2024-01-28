@@ -21,7 +21,7 @@ func generateTestEvent() *domain.Event {
 	e := &domain.Event{}
 	err := faker.FakeData(e)
 	if common.IsErr(err) {
-		fmt.Println(err)
+		panic(err)
 	}
 	e.EndTime = e.StartTime.Add(time.Hour * time.Duration(rand.Intn(48)))
 	e.ID = faker.UUIDHyphenated(options.WithGenerateUniqueValues(true))

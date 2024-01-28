@@ -53,11 +53,21 @@ func setDefaults() {
 }
 
 func init() {
-	var (
-		path string
-		err  error
-	)
-	flag.StringVar(&path, "config", "", "Path to configuration file")
+	var err error
+	log := logger.InitLogger(zerolog.GlobalLevel())
+	setDefaults()
+	if IsErr(err) {
+		log.Fatal().Msgf("Unable to decode into struct, %v", err)
+	}
+	viper.AutomaticEnv()
+	err = viper.Unmarshal(&Config)
+	if IsErr(err) {
+		log.Fatal().Msgf("Unable to decode into struct, %v", err)
+	}
+}
+
+// SetConfigFileSettings applying settings from a configuration file.
+func (config *AppConfig) SetConfigFileSettings(path string) {
 	flag.Parse()
 	log := logger.InitLogger(zerolog.GlobalLevel())
 	if path != "" {
@@ -65,17 +75,15 @@ func init() {
 		if err := viper.ReadInConfig(); IsErr(err) {
 			log.Fatal().Msgf("Error reading config file, %s", err)
 		}
-		err = viper.Unmarshal(&Config)
-	} else {
-		setDefaults()
-	}
-	if IsErr(err) {
-		log.Fatal().Msgf("Unable to decode into struct, %v", err)
+		err := viper.Unmarshal(&Config)
+		if IsErr(err) {
+			log.Fatal().Msgf("Unable to decode into struct, %v", err)
+		}
 	}
 	// Override config with environment variables if they exist.
 	viper.AutomaticEnv()
-	err = viper.Unmarshal(&Config)
+	err := setLogger(Config.Server.LogLevel)
 	if IsErr(err) {
-		log.Fatal().Msgf("Unable to decode into struct, %v", err)
+		log.Fatal().Msgf("Error parsing loglevel, %s", err)
 	}
 }
