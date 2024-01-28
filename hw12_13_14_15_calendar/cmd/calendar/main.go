@@ -12,9 +12,8 @@ import (
 	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/presentation/http/fiber"
 )
 
-var path string
-
 func main() {
+	var path string
 	flag.StringVar(&path, "config", "", "Path to configuration file")
 	flag.Parse()
 	common.Config.SetConfigFileSettings(path)
