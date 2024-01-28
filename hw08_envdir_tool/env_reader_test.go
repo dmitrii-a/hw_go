@@ -24,7 +24,7 @@ func TestReadDir(t *testing.T) {
 	})
 
 	t.Run("invalid file name", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "tests")
+		dir, err := os.MkdirTemp("", "test")
 		require.NoError(t, err)
 		defer func(path string) {
 			err := os.RemoveAll(path)
@@ -32,7 +32,7 @@ func TestReadDir(t *testing.T) {
 				require.NoError(t, err)
 			}
 		}(dir)
-		_, err = os.Create(path.Join(dir, "tests=tests"))
+		_, err = os.Create(path.Join(dir, "test=test"))
 		require.NoError(t, err)
 		result, err := ReadDir(dir)
 		require.Equal(t, err, ErrInvalidFileName)
@@ -40,7 +40,7 @@ func TestReadDir(t *testing.T) {
 	})
 
 	t.Run("replacing 0x00 with \n", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "tests")
+		dir, err := os.MkdirTemp("", "test")
 		require.NoError(t, err)
 		defer func(path string) {
 			err := os.RemoveAll(path)
@@ -48,7 +48,7 @@ func TestReadDir(t *testing.T) {
 				require.NoError(t, err)
 			}
 		}(dir)
-		file, err := os.Create(path.Join(dir, "tests"))
+		file, err := os.Create(path.Join(dir, "test"))
 		require.NoError(t, err)
 		defer func(file *os.File) {
 			err := file.Close()
@@ -56,12 +56,12 @@ func TestReadDir(t *testing.T) {
 				require.NoError(t, err)
 			}
 		}(file)
-		_, err = file.WriteString("tests\x00data \x00")
+		_, err = file.WriteString("test\x00data \x00")
 		require.NoError(t, err)
 		result, err := ReadDir(dir)
 		require.NoError(t, err)
-		env := Environment{"tests": EnvValue{
-			Value:      "tests\ndata",
+		env := Environment{"test": EnvValue{
+			Value:      "test\ndata",
 			NeedRemove: false,
 		}}
 		fmt.Println(result)
@@ -69,7 +69,7 @@ func TestReadDir(t *testing.T) {
 	})
 
 	t.Run("no env files in dir", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "tests")
+		dir, err := os.MkdirTemp("", "test")
 		require.NoError(t, err)
 		defer func(path string) {
 			err := os.RemoveAll(path)

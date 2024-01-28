@@ -46,17 +46,17 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Unit tests
-        run: go tests -v -count=1 -race -timeout=1m ./...
+        run: go test -v -count=1 -race -timeout=1m ./...
         working-directory: ${{ env.BRANCH }}
 
       - name: Optimization tests
-        run: go tests -v -count=1 -timeout=1m -tags bench ./...
+        run: go test -v -count=1 -timeout=1m -tags bench ./...
         if: env.BRANCH == 'hw10_program_optimization'
         working-directory: ${{ env.BRANCH }}
 
       - name: Bash tests
         shell: bash
-        run: ./tests.sh
+        run: ./test.sh
         if: contains('hw01_hello_otus hw07_file_copying hw08_envdir_tool hw11_telnet_client', env.BRANCH)
         working-directory: ${{ env.BRANCH }}
 
@@ -80,6 +80,6 @@ jobs:
         run: make build
         working-directory: hw12_13_14_15_calendar
 
-      - name: make tests
-        run: make tests
+      - name: make test
+        run: make test
         working-directory: hw12_13_14_15_calendar

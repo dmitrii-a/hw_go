@@ -17,8 +17,8 @@ func TestGetDomainStat(t *testing.T) {
 {"Id":4,"Name":"Gregory Reid","Username":"tButler","Email":"5Moore@Teklist.net","Phone":"520-04-16","Password":"r639qLNu","Address":"Sunfield Park 20"}
 {"Id":5,"Name":"Janice Rose","Username":"KeithHart","Email":"nulla@Linktype.com","Phone":"146-91-01","Password":"acSBF5","Address":"Russell Trail 61"}`
 	invalidEmailData := `{"mail: "invalid email"}`
-	invalidEmailWithoutPart := `{"Email: "tests.tests.com"}`
-	invalidEmailWithoutDomain := `{"Email":"tests@tests"}`
+	invalidEmailWithoutPart := `{"Email: "test.test.com"}`
+	invalidEmailWithoutDomain := `{"Email":"test@test"}`
 
 	t.Run("find 'com'", func(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(data), "com")
