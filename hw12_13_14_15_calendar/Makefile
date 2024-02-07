@@ -58,10 +58,25 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
-fix-code-style:
+fmt:
 	go fmt ./...
 	gofumpt -w -l -extra .
 	golangci-lint run ./... --fix
 	golines -w .
+
+generate:
+	protoc ./api/proto/api/v1/EventService.proto \
+			--proto_path=./api/proto \
+			--go_out=./internal/presentation/grpc --go_opt=paths=source_relative \
+			--go-grpc_out=./internal/presentation/grpc --go-grpc_opt=paths=source_relative \
+			--grpc-gateway_out=./internal/presentation/grpc --grpc-gateway_opt=paths=source_relative,logtostderr=true \
+			--validate_out lang=go:./internal/presentation/grpc --validate_opt=paths=source_relative \
+			--swagger_out=logtostderr=true,allow_merge=true,merge_file_name=api:./api \
+
+install-mockery:
+	go install github.com/vektra/mockery/v2@v2.40.1
+
+generate-mocks:
+	mockery --output=./tests/mocks --all
 
 .PHONY: build run build-img run-img version test lint fix-code-style migrate-up migrate-down migrate-status start-postgres stop-postgres rm-postgres install-lint-deps

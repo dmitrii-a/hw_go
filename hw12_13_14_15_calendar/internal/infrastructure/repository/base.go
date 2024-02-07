@@ -18,13 +18,15 @@ var (
 
 func init() {
 	var err error
-	db, err = sqlx.Open("postgres", common.ConnectionDBString(common.Config.DB))
-	if common.IsErr(err) {
-		common.Logger.Fatal().Err(err)
+	if !common.Config.UseCacheDB {
+		db, err = sqlx.Open("postgres", common.ConnectionDBString(common.Config.DB))
+		if common.IsErr(err) {
+			common.Logger.Fatal().Err(err)
+		}
+		db.SetMaxOpenConns(25)
+		db.SetMaxIdleConns(5)
+		db.SetConnMaxLifetime(5 * time.Minute)
+	} else {
+		cacheDB = freecache.NewCacheDB(1024 * 1024 * 100)
 	}
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(5 * time.Minute)
-
-	cacheDB = freecache.NewCacheDB(1024 * 1024 * 100)
 }

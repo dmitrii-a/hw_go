@@ -12,33 +12,19 @@ import (
 
 type eventDBRepository struct{}
 
-const truncateTime = time.Millisecond
-
 // NewEventDBRepository returns a new instance of a eventDBRepository.
 func NewEventDBRepository() domain.EventRepository {
 	return &eventDBRepository{}
 }
 
-// normalizeTime set UTC and truncates time to milliseconds.
-func normalizeTime(e *domain.Event) {
-	if e.CreatedTime != nil {
-		createdTime := e.CreatedTime.UTC().Truncate(truncateTime)
-		e.CreatedTime = &createdTime
-	} else {
-		createdTime := time.Now().UTC().Truncate(truncateTime)
-		e.CreatedTime = &createdTime
-	}
-	e.StartTime = e.StartTime.UTC().Truncate(truncateTime)
-	e.EndTime = e.EndTime.UTC().Truncate(truncateTime)
-	e.NotifyTime = e.NotifyTime.UTC().Truncate(truncateTime)
-}
-
-// AddEvent adds a new event to the database.
-func (repo *eventDBRepository) AddEvent(event *domain.Event) error {
-	normalizeTime(event)
+// Add adds a new event to the database.
+func (repo *eventDBRepository) Add(event *domain.Event) error {
+	createdTime := time.Now().UTC()
+	event.CreatedTime = &createdTime
+	event.NormalizeTime()
 	query := `INSERT INTO event (id, title, start_time, end_time, notify_time, description, user_id, 
               created_time, updated_time) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := db.Exec(
+	result, err := db.Exec(
 		query,
 		event.ID,
 		event.Title,
@@ -53,11 +39,18 @@ func (repo *eventDBRepository) AddEvent(event *domain.Event) error {
 	if common.IsErr(err) {
 		return err
 	}
+	count, err := result.RowsAffected()
+	if common.IsErr(err) {
+		return err
+	}
+	if count == 0 {
+		return domain.ErrEventCreate
+	}
 	return nil
 }
 
-// UpdateEvent updates an existing event in the database.
-func (repo *eventDBRepository) UpdateEvent(event *domain.Event) error {
+// Update updates an existing event in the database.
+func (repo *eventDBRepository) Update(event *domain.Event) error {
 	now := time.Now()
 	query := `UPDATE event SET (
                   title, start_time, end_time, notify_time, description, user_id, created_time, updated_time
@@ -77,12 +70,18 @@ func (repo *eventDBRepository) UpdateEvent(event *domain.Event) error {
 	if common.IsErr(err) {
 		return err
 	}
-	_, err = result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if common.IsErr(err) {
+		return err
+	}
+	if rowsAffected == 0 {
+		return domain.ErrEventNotExist
+	}
 	return err
 }
 
-// GetEvent returns an event by ID.
-func (repo *eventDBRepository) GetEvent(eventID string) (*domain.Event, error) {
+// Get returns an event by ID.
+func (repo *eventDBRepository) Get(eventID string) (*domain.Event, error) {
 	var e domain.Event
 	query := `SELECT id, title, start_time, end_time, notify_time,
 			  description, user_id, created_time FROM event WHERE id = $1`
@@ -101,19 +100,20 @@ func (repo *eventDBRepository) GetEvent(eventID string) (*domain.Event, error) {
 		&e.CreatedTime,
 	)
 	if common.IsErr(err) {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrEventNotExist
+		}
 		return nil, err
 	}
-	createdTime := e.CreatedTime.UTC()
-	e.CreatedTime = &createdTime
-	normalizeTime(&e)
+	e.NormalizeTime()
 	if common.IsErr(err) {
 		return nil, err
 	}
 	return &e, nil
 }
 
-// DeleteEvent removes an event by ID.
-func (repo *eventDBRepository) DeleteEvent(eventID string) error {
+// Delete removes an event by ID.
+func (repo *eventDBRepository) Delete(eventID string) error {
 	result, err := db.Exec(
 		"DELETE FROM event WHERE id = $1", eventID,
 	)
@@ -124,8 +124,8 @@ func (repo *eventDBRepository) DeleteEvent(eventID string) error {
 	return err
 }
 
-// ListEventsForPeriod returns a list of events for a period of time.
-func (repo *eventDBRepository) ListEventsForPeriod(
+// ListForPeriod returns a list of events for a period of time.
+func (repo *eventDBRepository) ListForPeriod(
 	startTime, endTime time.Time,
 ) ([]*domain.Event, error) {
 	query := `SELECT id, title, start_time, end_time, notify_time, description, user_id, 
@@ -155,14 +155,13 @@ func (repo *eventDBRepository) ListEventsForPeriod(
 		); common.IsErr(err) {
 			return nil, err
 		}
-		normalizeTime(&e)
+		e.NormalizeTime()
 		events = append(events, &e)
 	}
 
 	if err := rows.Err(); common.IsErr(err) {
 		return nil, err
 	}
-
 	return events, nil
 }
 
@@ -173,9 +172,12 @@ func NewEventCacheRepository() domain.EventRepository {
 	return &eventCacheRepository{}
 }
 
-// AddEvent adds a new event to the cache.
-func (repo *eventCacheRepository) AddEvent(event *domain.Event) error {
+// Add adds a new event to the cache.
+func (repo *eventCacheRepository) Add(event *domain.Event) error {
 	key := []byte(event.ID)
+	createdTime := time.Now().UTC()
+	event.CreatedTime = &createdTime
+	event.NormalizeTime()
 	if _, err := cacheDB.Get(key); err == nil {
 		return domain.ErrEventExist
 	}
@@ -189,9 +191,10 @@ func (repo *eventCacheRepository) AddEvent(event *domain.Event) error {
 	return nil
 }
 
-// UpdateEvent updates an existing event in the cache.
-func (repo *eventCacheRepository) UpdateEvent(event *domain.Event) error {
+// Update updates an existing event in the cache.
+func (repo *eventCacheRepository) Update(event *domain.Event) error {
 	key := []byte(event.ID)
+	event.NormalizeTime()
 	if _, err := cacheDB.Get(key); common.IsErr(err) {
 		return domain.ErrEventNotExist
 	}
@@ -205,8 +208,8 @@ func (repo *eventCacheRepository) UpdateEvent(event *domain.Event) error {
 	return nil
 }
 
-// GetEvent returns an event by ID.
-func (repo *eventCacheRepository) GetEvent(eventID string) (*domain.Event, error) {
+// Get returns an event by ID.
+func (repo *eventCacheRepository) Get(eventID string) (*domain.Event, error) {
 	key := []byte(eventID)
 	data, err := cacheDB.Get(key)
 	if common.IsErr(err) {
@@ -220,8 +223,8 @@ func (repo *eventCacheRepository) GetEvent(eventID string) (*domain.Event, error
 	return event, nil
 }
 
-// DeleteEvent removes an event by ID.
-func (repo *eventCacheRepository) DeleteEvent(eventID string) error {
+// Delete removes an event by ID.
+func (repo *eventCacheRepository) Delete(eventID string) error {
 	key := []byte(eventID)
 	if _, err := cacheDB.Get(key); common.IsErr(err) {
 		return domain.ErrEventNotExist
@@ -232,8 +235,8 @@ func (repo *eventCacheRepository) DeleteEvent(eventID string) error {
 	return nil
 }
 
-// ListEventsForPeriod returns a list of events for a period of time.
-func (repo *eventCacheRepository) ListEventsForPeriod(
+// ListForPeriod returns a list of events for a period of time.
+func (repo *eventCacheRepository) ListForPeriod(
 	startTime, endTime time.Time,
 ) ([]*domain.Event, error) {
 	keys := cacheDB.Keys()
