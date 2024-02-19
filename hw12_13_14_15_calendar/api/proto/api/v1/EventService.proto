@@ -1,0 +1,73 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+import "google/api/annotations.proto";
+
+package event;
+option go_package = "github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/presentation/grpc/v1/api;pb";
+
+message Event {
+  string id = 1 [(validate.rules).string.uuid = true];
+  string title = 2 [(validate.rules).string.min_len = 1];
+  google.protobuf.Timestamp start_time = 3 [(validate.rules).timestamp.required = true];
+  google.protobuf.Timestamp end_time = 4;
+  google.protobuf.Timestamp notify_time = 5;
+  string description = 6;
+  int64 user_id = 7 [(validate.rules).int64.gte = 0];
+  google.protobuf.Timestamp created_time = 8;
+}
+
+message EventResponse {
+  Event event = 1;
+}
+
+message EventsResponse {
+  repeated Event events = 1;
+}
+
+message EventRequest {
+  Event event = 1 [(validate.rules).message.required = true];
+  string request_id = 2;
+}
+
+message EventIDRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+  string request_id = 2;
+}
+
+message TimePeriodRequest {
+  google.protobuf.Timestamp start_time = 1 [(validate.rules).timestamp.required = true];
+  google.protobuf.Timestamp end_time = 2 [(validate.rules).timestamp.required = true];
+  string request_id = 3;
+}
+
+service EventServiceV1 {
+  rpc GetEvent(EventIDRequest) returns (EventResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/events/{id}"
+    };
+  }
+  rpc CreateEvent(EventRequest) returns (EventResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/event"
+      body: "*"
+    };
+  }
+  rpc UpdateEvent(EventRequest) returns (EventResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/event"
+      body: "*"
+    };
+  }
+  rpc DeleteEvent(EventIDRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/event/{id}"
+    };
+  }
+  rpc GetEventsForPeriod(TimePeriodRequest) returns (EventsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/events/{start_time}/{end_time}"
+    };
+  }
+}

@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql/driver"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
@@ -16,33 +15,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/suite"
 )
-
-func generateTestEvent() *domain.Event {
-	e := &domain.Event{}
-	err := faker.FakeData(e)
-	if common.IsErr(err) {
-		panic(err)
-	}
-	e.EndTime = e.StartTime.Add(time.Hour * time.Duration(rand.Intn(48)))
-	e.ID = faker.UUIDHyphenated(options.WithGenerateUniqueValues(true))
-	normalizeTime(e)
-	return e
-}
-
-func getStartEndTime(e1, e2 *domain.Event) (time.Time, time.Time) {
-	var startTime, endTime time.Time
-	if e1.StartTime.Before(e2.StartTime) {
-		startTime = e1.StartTime
-	} else {
-		startTime = e2.StartTime
-	}
-	if e1.EndTime.After(e2.EndTime) {
-		endTime = e1.EndTime
-	} else {
-		endTime = e2.EndTime
-	}
-	return startTime, endTime
-}
 
 type eventDBTestSuite struct {
 	base tests.BaseDBTestSuite
@@ -64,8 +36,8 @@ func (s *eventDBTestSuite) TearDownTest() {
 }
 
 func (s *eventDBTestSuite) setEventInDB() *domain.Event {
-	e := generateTestEvent()
-	err := s.repo.AddEvent(e)
+	e := tests.GenerateTestEvent()
+	err := s.repo.Add(e)
 	s.NoError(err)
 	return e
 }
@@ -73,36 +45,36 @@ func (s *eventDBTestSuite) setEventInDB() *domain.Event {
 func (s *eventDBTestSuite) TestNonExistedEvent() {
 	_ = s.setEventInDB()
 	eventID := faker.UUIDHyphenated(options.WithGenerateUniqueValues(true))
-	event, err := s.repo.GetEvent(eventID)
+	event, err := s.repo.Get(eventID)
 	s.Error(err)
 	s.Nil(event)
 }
 
 func (s *eventDBTestSuite) TestAddEvent() {
-	e := generateTestEvent()
-	err := s.repo.AddEvent(e)
+	e := tests.GenerateTestEvent()
+	err := s.repo.Add(e)
 	s.NoError(err)
 }
 
 func (s *eventDBTestSuite) TestAddEventWithExistingID() {
-	e := generateTestEvent()
-	err := s.repo.AddEvent(e)
+	e := tests.GenerateTestEvent()
+	err := s.repo.Add(e)
 	s.NoError(err)
-	err = s.repo.AddEvent(e)
+	err = s.repo.Add(e)
 	s.Error(err)
 }
 
 func (s *eventDBTestSuite) TestUpdateEvent() {
-	e := generateTestEvent()
-	err := s.repo.AddEvent(e)
+	e := tests.GenerateTestEvent()
+	err := s.repo.Add(e)
 	s.NoError(err)
-	err = s.repo.UpdateEvent(e)
+	err = s.repo.Update(e)
 	s.NoError(err)
 }
 
 func (s *eventDBTestSuite) TestGetEvent() {
 	e := s.setEventInDB()
-	result, err := s.repo.GetEvent(e.ID)
+	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(e, result)
@@ -110,24 +82,24 @@ func (s *eventDBTestSuite) TestGetEvent() {
 
 func (s *eventDBTestSuite) TestDeleteEvent() {
 	e := s.setEventInDB()
-	result, err := s.repo.GetEvent(e.ID)
+	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.NotNil(result)
-	err = s.repo.DeleteEvent(e.ID)
+	err = s.repo.Delete(e.ID)
 	s.NoError(err)
 }
 
 func (s *eventDBTestSuite) TestListEventsForPeriodWithNoEvents() {
 	startTime := time.Now()
 	endTime := time.Now().Add(time.Hour)
-	events, err := s.repo.ListEventsForPeriod(startTime, endTime)
+	events, err := s.repo.ListForPeriod(startTime, endTime)
 	s.NoError(err)
 	s.Empty(events)
 }
 
 func (s *eventDBTestSuite) TestListEventsForPeriodWithSingleEvent() {
 	e := s.setEventInDB()
-	events, err := s.repo.ListEventsForPeriod(e.StartTime, e.EndTime)
+	events, err := s.repo.ListForPeriod(e.StartTime, e.EndTime)
 	s.NoError(err)
 	s.Len(events, 1)
 	s.Equal(e, events[0])
@@ -136,8 +108,8 @@ func (s *eventDBTestSuite) TestListEventsForPeriodWithSingleEvent() {
 func (s *eventDBTestSuite) TestListEventsForPeriodWithMultipleEvents() {
 	e1 := s.setEventInDB()
 	e2 := s.setEventInDB()
-	startTime, endTime := getStartEndTime(e1, e2)
-	events, err := s.repo.ListEventsForPeriod(startTime, endTime)
+	startTime, endTime := tests.GetEventStartEndTime(e1, e2)
+	events, err := s.repo.ListForPeriod(startTime, endTime)
 	s.NoError(err)
 	s.Len(events, 2)
 	s.Equal(events[0], e1)
@@ -147,7 +119,7 @@ func (s *eventDBTestSuite) TestListEventsForPeriodWithMultipleEvents() {
 func (s *eventDBTestSuite) TestListEventsForPeriodWithEventOutsidePeriod() {
 	e := s.setEventInDB()
 	endTime := e.EndTime.Add(time.Minute)
-	events, err := s.repo.ListEventsForPeriod(endTime, endTime)
+	events, err := s.repo.ListForPeriod(endTime, endTime)
 	s.NoError(err)
 	s.Empty(events)
 }
@@ -176,7 +148,7 @@ func (s *eventMockSQLTestSuite) SetupTest() {
 }
 
 func (s *eventMockSQLTestSuite) setEventInDB() *domain.Event {
-	e := generateTestEvent()
+	e := tests.GenerateTestEvent()
 	rows := sqlmock.NewRows(
 		[]string{
 			"id", "title", "start_time", "end_time", "notify_time", "description", "user_id", "created_time",
@@ -191,13 +163,13 @@ func (s *eventMockSQLTestSuite) setEventInDB() *domain.Event {
 func (s *eventMockSQLTestSuite) TestNonExistedEvent() {
 	_ = s.setEventInDB()
 	eventID := faker.UUIDHyphenated()
-	event, err := s.repo.GetEvent(eventID)
+	event, err := s.repo.Get(eventID)
 	s.Error(err)
 	s.Nil(event)
 }
 
 func (s *eventMockSQLTestSuite) TestAddEvent() {
-	e := generateTestEvent()
+	e := tests.GenerateTestEvent()
 	s.mock.ExpectExec("^INSERT INTO event (.+) VALUES (.+)$").
 		WithArgs(
 			e.ID,
@@ -210,12 +182,12 @@ func (s *eventMockSQLTestSuite) TestAddEvent() {
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
 		).WillReturnResult(sqlmock.NewResult(1, 1))
-	err := s.repo.AddEvent(e)
+	err := s.repo.Add(e)
 	s.NoError(err)
 }
 
 func (s *eventMockSQLTestSuite) TestAddEventWithExistingID() {
-	e := generateTestEvent()
+	e := tests.GenerateTestEvent()
 	duplicateErr := fmt.Errorf("pq: duplicate key value violates unique constraint \"event_pkey\"")
 	s.mock.ExpectExec("^INSERT INTO event (.+) VALUES (.+)$").
 		WithArgs(
@@ -229,12 +201,12 @@ func (s *eventMockSQLTestSuite) TestAddEventWithExistingID() {
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
 		).WillReturnError(duplicateErr)
-	err := s.repo.AddEvent(e)
+	err := s.repo.Add(e)
 	s.ErrorIs(err, duplicateErr)
 }
 
 func (s *eventMockSQLTestSuite) TestUpdateEvent() {
-	e := generateTestEvent()
+	e := tests.GenerateTestEvent()
 	s.mock.ExpectExec("^UPDATE event SET (.+) WHERE id = \\$9$").
 		WithArgs(
 			e.Title,
@@ -247,13 +219,13 @@ func (s *eventMockSQLTestSuite) TestUpdateEvent() {
 			sqlmock.AnyArg(),
 			e.ID,
 		).WillReturnResult(sqlmock.NewResult(1, 1))
-	err := s.repo.UpdateEvent(e)
+	err := s.repo.Update(e)
 	s.NoError(err)
 }
 
 func (s *eventMockSQLTestSuite) TestGetEvent() {
 	e := s.setEventInDB()
-	result, err := s.repo.GetEvent(e.ID)
+	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(e, result)
@@ -261,13 +233,13 @@ func (s *eventMockSQLTestSuite) TestGetEvent() {
 
 func (s *eventMockSQLTestSuite) TestDeleteEvent() {
 	e := s.setEventInDB()
-	result, err := s.repo.GetEvent(e.ID)
+	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.NotNil(result)
 	s.mock.ExpectExec("^DELETE FROM event WHERE id = \\$1$").
 		WithArgs(e.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
-	err = s.repo.DeleteEvent(e.ID)
+	err = s.repo.Delete(e.ID)
 	s.NoError(err)
 }
 
@@ -299,14 +271,14 @@ func (s *eventMockSQLTestSuite) TestListEventsForPeriodWithNoEvents() {
 	startTime := time.Now()
 	endTime := time.Now().Add(time.Hour)
 	s.mockPeriodSelect(startTime, endTime)
-	events, err := s.repo.ListEventsForPeriod(startTime, endTime)
+	events, err := s.repo.ListForPeriod(startTime, endTime)
 	s.NoError(err)
 	s.Empty(events)
 }
 
 func (s *eventMockSQLTestSuite) TestListEventsForPeriodWithSingleEvent() {
 	e := s.setEventInDB()
-	result, err := s.repo.GetEvent(e.ID)
+	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.Equal(e, result)
 	s.mockPeriodSelect(
@@ -323,16 +295,16 @@ func (s *eventMockSQLTestSuite) TestListEventsForPeriodWithSingleEvent() {
 			e.CreatedTime,
 		},
 	)
-	events, err := s.repo.ListEventsForPeriod(e.StartTime, e.EndTime)
+	events, err := s.repo.ListForPeriod(e.StartTime, e.EndTime)
 	s.NoError(err)
 	s.Len(events, 1)
 	s.Equal(e, events[0])
 }
 
 func (s *eventMockSQLTestSuite) TestListEventsForPeriodWithMultipleEvents() {
-	e1 := generateTestEvent()
-	e2 := generateTestEvent()
-	startTime, endTime := getStartEndTime(e1, e2)
+	e1 := tests.GenerateTestEvent()
+	e2 := tests.GenerateTestEvent()
+	startTime, endTime := tests.GetEventStartEndTime(e1, e2)
 	s.mockPeriodSelect(
 		startTime,
 		endTime,
@@ -357,7 +329,7 @@ func (s *eventMockSQLTestSuite) TestListEventsForPeriodWithMultipleEvents() {
 			e2.CreatedTime,
 		},
 	)
-	events, err := s.repo.ListEventsForPeriod(startTime, endTime)
+	events, err := s.repo.ListForPeriod(startTime, endTime)
 	s.NoError(err)
 	s.Len(events, 2)
 	s.Equal(events[0], e1)
@@ -366,12 +338,12 @@ func (s *eventMockSQLTestSuite) TestListEventsForPeriodWithMultipleEvents() {
 
 func (s *eventMockSQLTestSuite) TestListEventsForPeriodWithEventOutsidePeriod() {
 	e := s.setEventInDB()
-	result, err := s.repo.GetEvent(e.ID)
+	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.Equal(e, result)
 	endTime := e.EndTime.Add(time.Minute)
 	s.mockPeriodSelect(endTime, endTime)
-	events, err := s.repo.ListEventsForPeriod(endTime, endTime)
+	events, err := s.repo.ListForPeriod(endTime, endTime)
 	s.NoError(err)
 	s.Empty(events)
 }
@@ -394,75 +366,75 @@ func (s *eventCacheTestSuite) TearDownTest() {
 }
 
 func (s *eventCacheTestSuite) TestAddEvent() {
-	event := generateTestEvent()
-	err := s.repo.AddEvent(event)
+	event := tests.GenerateTestEvent()
+	err := s.repo.Add(event)
 	s.NoError(err)
-	result, err := s.repo.GetEvent(event.ID)
+	result, err := s.repo.Get(event.ID)
 	s.NoError(err)
 	s.Equal(event, result)
 }
 
 func (s *eventCacheTestSuite) TestAddExistEvent() {
-	event := generateTestEvent()
-	err := s.repo.AddEvent(event)
+	event := tests.GenerateTestEvent()
+	err := s.repo.Add(event)
 	s.NoError(err)
-	err = s.repo.AddEvent(event)
+	err = s.repo.Add(event)
 	s.Error(err)
 }
 
 func (s *eventCacheTestSuite) TestUpdateEvent() {
-	event := generateTestEvent()
-	err := s.repo.AddEvent(event)
+	event := tests.GenerateTestEvent()
+	err := s.repo.Add(event)
 	s.NoError(err)
 	event.Title = "NewTitle"
-	err = s.repo.UpdateEvent(event)
+	err = s.repo.Update(event)
 	s.NoError(err)
-	updatedEvent, err := s.repo.GetEvent(event.ID)
+	updatedEvent, err := s.repo.Get(event.ID)
 	s.NoError(err)
 	s.Equal("NewTitle", updatedEvent.Title)
 }
 
 func (s *eventCacheTestSuite) TestUpdateNonExistEvent() {
-	event := generateTestEvent()
-	err := s.repo.UpdateEvent(event)
+	event := tests.GenerateTestEvent()
+	err := s.repo.Update(event)
 	s.Error(err)
 }
 
 func (s *eventCacheTestSuite) TestGetNonExistEvent() {
-	_, err := s.repo.GetEvent(faker.UUIDHyphenated(options.WithGenerateUniqueValues(true)))
+	_, err := s.repo.Get(faker.UUIDHyphenated(options.WithGenerateUniqueValues(true)))
 	s.Error(err)
 }
 
 func (s *eventCacheTestSuite) TestDeleteEvent() {
-	event := generateTestEvent()
-	err := s.repo.AddEvent(event)
+	event := tests.GenerateTestEvent()
+	err := s.repo.Add(event)
 	s.NoError(err)
-	err = s.repo.DeleteEvent(event.ID)
+	err = s.repo.Delete(event.ID)
 	s.NoError(err)
-	_, err = s.repo.GetEvent(event.ID)
+	_, err = s.repo.Get(event.ID)
 	s.Error(err)
 }
 
 func (s *eventCacheTestSuite) TestDeleteNonExistentEvent() {
-	err := s.repo.DeleteEvent(faker.UUIDHyphenated(options.WithGenerateUniqueValues(true)))
+	err := s.repo.Delete(faker.UUIDHyphenated(options.WithGenerateUniqueValues(true)))
 	s.Error(err)
 }
 
 func (s *eventCacheTestSuite) TestListEventsForPeriod() {
-	event1 := generateTestEvent()
-	event2 := generateTestEvent()
-	err := s.repo.AddEvent(event1)
+	event1 := tests.GenerateTestEvent()
+	event2 := tests.GenerateTestEvent()
+	err := s.repo.Add(event1)
 	s.NoError(err)
-	err = s.repo.AddEvent(event2)
+	err = s.repo.Add(event2)
 	s.NoError(err)
-	startTime, endTime := getStartEndTime(event1, event2)
-	events, err := s.repo.ListEventsForPeriod(startTime, endTime)
+	startTime, endTime := tests.GetEventStartEndTime(event1, event2)
+	events, err := s.repo.ListForPeriod(startTime, endTime)
 	s.NoError(err)
 	s.Len(events, 2)
 }
 
 func (s *eventCacheTestSuite) TestListEventsForPeriodNoEvents() {
-	events, err := s.repo.ListEventsForPeriod(time.Now(), time.Now())
+	events, err := s.repo.ListForPeriod(time.Now(), time.Now())
 	s.NoError(err)
 	s.Len(events, 0)
 }

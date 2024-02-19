@@ -20,23 +20,32 @@ type DBConfig struct {
 
 // ServerConfig server config.
 type ServerConfig struct {
-	Host            string `mapstructure:"HOST"`
-	Port            int    `mapstructure:"PORT"`
-	Debug           bool   `mapstructure:"DEBUG"`
-	LogLevel        string `mapstructure:"LOG_LEVEL"`
-	ShutdownTimeout int    `mapstructure:"SHUTDOWN_TIMEOUT_SECOND"`
+	Host              string `mapstructure:"HOST"`
+	Port              int    `mapstructure:"PORT"`
+	GrpcHost          string `mapstructure:"GRPC_HOST"`
+	GrpcPort          int    `mapstructure:"GRPC_PORT"`
+	GrpcGWHost        string `mapstructure:"GRPC_GW_HOST"`
+	GrpcGWPort        int    `mapstructure:"GRPC_GW_PORT"`
+	Debug             bool   `mapstructure:"DEBUG"`
+	LogLevel          string `mapstructure:"LOG_LEVEL"`
+	ShutdownTimeout   int    `mapstructure:"SHUTDOWN_TIMEOUT_SECOND"`
+	ReadHeaderTimeout int    `mapstructure:"READ_HEADER_TIMEOUT_SECOND"`
+	ReadTimeout       int    `mapstructure:"READ_TIMEOUT_SECOND"`
 }
 
 // AppConfig app config.
 type AppConfig struct {
-	Server ServerConfig `mapstructure:"APP"`
-	DB     DBConfig     `mapstructure:"DB"`
+	Server     ServerConfig `mapstructure:"APP"`
+	DB         DBConfig     `mapstructure:"DB"`
+	UseCacheDB bool         `mapstructure:"USE_CACHE_DB"`
 }
 
 // Config project config.
 var Config AppConfig
 
 func setDefaults() {
+	viper.SetDefault("USE_CACHE_DB", true)
+
 	viper.SetDefault("DB.USERNAME", "admin")
 	viper.SetDefault("DB.PASSWORD", "password")
 	viper.SetDefault("DB.DATABASE", "calendar-service")
@@ -47,9 +56,15 @@ func setDefaults() {
 	// Set default values for the ServerConfig.
 	viper.SetDefault("APP.HOST", "127.0.0.1")
 	viper.SetDefault("APP.PORT", 8080)
+	viper.SetDefault("APP.GRPC_HOST", "127.0.0.1")
+	viper.SetDefault("APP.GRPC_PORT", 50051)
+	viper.SetDefault("APP.GRPC_GW_HOST", "127.0.0.1")
+	viper.SetDefault("APP.GRPC_GW_PORT", 8081)
 	viper.SetDefault("APP.DEBUG", true)
 	viper.SetDefault("APP.LOG_LEVEL", "info")
 	viper.SetDefault("APP.SHUTDOWN_TIMEOUT_SECOND", 30)
+	viper.SetDefault("APP.READ_HEADER_TIMEOUT_SECOND", 10)
+	viper.SetDefault("APP.READ_TIMEOUT_SECOND", 10)
 }
 
 func init() {

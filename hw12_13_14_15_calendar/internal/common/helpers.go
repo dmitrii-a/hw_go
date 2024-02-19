@@ -12,3 +12,7 @@ func ConnectionDBString(c DBConfig) string {
 	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
 		c.Host, c.Port, c.Username, c.Password, c.Database, c.SSLMode)
 }
+
+func GetServerAddr(host string, port int) string {
+	return fmt.Sprintf("%v:%v", host, port)
+}

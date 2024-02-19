@@ -2,11 +2,10 @@ package fiber
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/common"
-	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/presentation/http"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/presentation"
 	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/presentation/http/fiber/handlers"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/logger"
@@ -15,7 +14,7 @@ import (
 )
 
 // NewServer returns a new instance of a server.
-func NewServer() http.Server {
+func NewServer() presentation.Server {
 	return &server{}
 }
 
@@ -23,12 +22,9 @@ type server struct {
 	app *fiber.App
 }
 
-func (s *server) getServerAddr() string {
-	return fmt.Sprintf("%v:%v", common.Config.Server.Host, common.Config.Server.Port)
-}
-
 // Start starts the HTTP server.
 func (s *server) Start(ctx context.Context) error {
+	common.Logger.Info().Msg("fiber service starting...")
 	app := fiber.New()
 	s.app = app
 	app.Use(
@@ -51,16 +47,20 @@ func (s *server) Start(ctx context.Context) error {
 	app.Get("/", handlers.HelloWorld)
 	api := app.Group("/api/v1")
 	api.Get("/health/", handlers.HealthCheck)
-	err := app.Listen(s.getServerAddr())
-	if common.IsErr(err) {
-		return err
-	}
+	go func() {
+		if err := app.Listen(common.GetServerAddr(common.Config.Server.Host, common.Config.Server.Port)); common.IsErr(
+			err,
+		) {
+			common.Logger.Fatal().Msg("fiber Listen(): " + err.Error())
+		}
+	}()
+	common.Logger.Info().Msg("fiber service started")
 	<-ctx.Done()
 	return nil
 }
 
 // Stop stops the HTTP server.
 func (s *server) Stop(ctx context.Context) error {
-	common.Logger.Info().Msg("calendar service is stopping...")
+	common.Logger.Info().Msg("fiber service is stopping...")
 	return s.app.ShutdownWithContext(ctx)
 }
