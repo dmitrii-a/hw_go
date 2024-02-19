@@ -50,6 +50,24 @@ func (_m *EventRepository) Delete(eventID string) error {
 	return r0
 }
 
+// DeleteEventBeforeDate provides a mock function with given fields: date
+func (_m *EventRepository) DeleteEventBeforeDate(date time.Time) error {
+	ret := _m.Called(date)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteEventBeforeDate")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(time.Time) error); ok {
+		r0 = rf(date)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Get provides a mock function with given fields: eventID
 func (_m *EventRepository) Get(eventID string) (*domain.Event, error) {
 	ret := _m.Called(eventID)
@@ -80,12 +98,42 @@ func (_m *EventRepository) Get(eventID string) (*domain.Event, error) {
 	return r0, r1
 }
 
-// ListForPeriod provides a mock function with given fields: startTime, endTime
-func (_m *EventRepository) ListForPeriod(startTime time.Time, endTime time.Time) ([]*domain.Event, error) {
+// GetEventsByNotifyTime provides a mock function with given fields: startTime, endTime
+func (_m *EventRepository) GetEventsByNotifyTime(startTime time.Time, endTime time.Time) ([]*domain.Event, error) {
 	ret := _m.Called(startTime, endTime)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ListForPeriod")
+		panic("no return value specified for GetEventsByNotifyTime")
+	}
+
+	var r0 []*domain.Event
+	var r1 error
+	if rf, ok := ret.Get(0).(func(time.Time, time.Time) ([]*domain.Event, error)); ok {
+		return rf(startTime, endTime)
+	}
+	if rf, ok := ret.Get(0).(func(time.Time, time.Time) []*domain.Event); ok {
+		r0 = rf(startTime, endTime)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*domain.Event)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(time.Time, time.Time) error); ok {
+		r1 = rf(startTime, endTime)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetEventsByPeriod provides a mock function with given fields: startTime, endTime
+func (_m *EventRepository) GetEventsByPeriod(startTime time.Time, endTime time.Time) ([]*domain.Event, error) {
+	ret := _m.Called(startTime, endTime)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetEventsByPeriod")
 	}
 
 	var r0 []*domain.Event

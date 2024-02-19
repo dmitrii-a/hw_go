@@ -20,11 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	EventServiceV1_GetEvent_FullMethodName           = "/event.EventServiceV1/GetEvent"
-	EventServiceV1_CreateEvent_FullMethodName        = "/event.EventServiceV1/CreateEvent"
-	EventServiceV1_UpdateEvent_FullMethodName        = "/event.EventServiceV1/UpdateEvent"
-	EventServiceV1_DeleteEvent_FullMethodName        = "/event.EventServiceV1/DeleteEvent"
-	EventServiceV1_GetEventsForPeriod_FullMethodName = "/event.EventServiceV1/GetEventsForPeriod"
+	EventServiceV1_GetEvent_FullMethodName          = "/event.EventServiceV1/GetEvent"
+	EventServiceV1_CreateEvent_FullMethodName       = "/event.EventServiceV1/CreateEvent"
+	EventServiceV1_UpdateEvent_FullMethodName       = "/event.EventServiceV1/UpdateEvent"
+	EventServiceV1_DeleteEvent_FullMethodName       = "/event.EventServiceV1/DeleteEvent"
+	EventServiceV1_GetEventsByPeriod_FullMethodName = "/event.EventServiceV1/GetEventsByPeriod"
 )
 
 // EventServiceV1Client is the client API for EventServiceV1 service.
@@ -35,7 +35,7 @@ type EventServiceV1Client interface {
 	CreateEvent(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventResponse, error)
 	UpdateEvent(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventResponse, error)
 	DeleteEvent(ctx context.Context, in *EventIDRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	GetEventsForPeriod(ctx context.Context, in *TimePeriodRequest, opts ...grpc.CallOption) (*EventsResponse, error)
+	GetEventsByPeriod(ctx context.Context, in *TimePeriodRequest, opts ...grpc.CallOption) (*EventsResponse, error)
 }
 
 type eventServiceV1Client struct {
@@ -82,9 +82,9 @@ func (c *eventServiceV1Client) DeleteEvent(ctx context.Context, in *EventIDReque
 	return out, nil
 }
 
-func (c *eventServiceV1Client) GetEventsForPeriod(ctx context.Context, in *TimePeriodRequest, opts ...grpc.CallOption) (*EventsResponse, error) {
+func (c *eventServiceV1Client) GetEventsByPeriod(ctx context.Context, in *TimePeriodRequest, opts ...grpc.CallOption) (*EventsResponse, error) {
 	out := new(EventsResponse)
-	err := c.cc.Invoke(ctx, EventServiceV1_GetEventsForPeriod_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, EventServiceV1_GetEventsByPeriod_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ type EventServiceV1Server interface {
 	CreateEvent(context.Context, *EventRequest) (*EventResponse, error)
 	UpdateEvent(context.Context, *EventRequest) (*EventResponse, error)
 	DeleteEvent(context.Context, *EventIDRequest) (*emptypb.Empty, error)
-	GetEventsForPeriod(context.Context, *TimePeriodRequest) (*EventsResponse, error)
+	GetEventsByPeriod(context.Context, *TimePeriodRequest) (*EventsResponse, error)
 	mustEmbedUnimplementedEventServiceV1Server()
 }
 
@@ -119,8 +119,8 @@ func (UnimplementedEventServiceV1Server) UpdateEvent(context.Context, *EventRequ
 func (UnimplementedEventServiceV1Server) DeleteEvent(context.Context, *EventIDRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteEvent not implemented")
 }
-func (UnimplementedEventServiceV1Server) GetEventsForPeriod(context.Context, *TimePeriodRequest) (*EventsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetEventsForPeriod not implemented")
+func (UnimplementedEventServiceV1Server) GetEventsByPeriod(context.Context, *TimePeriodRequest) (*EventsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEventsByPeriod not implemented")
 }
 func (UnimplementedEventServiceV1Server) mustEmbedUnimplementedEventServiceV1Server() {}
 
@@ -207,20 +207,20 @@ func _EventServiceV1_DeleteEvent_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _EventServiceV1_GetEventsForPeriod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _EventServiceV1_GetEventsByPeriod_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TimePeriodRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(EventServiceV1Server).GetEventsForPeriod(ctx, in)
+		return srv.(EventServiceV1Server).GetEventsByPeriod(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: EventServiceV1_GetEventsForPeriod_FullMethodName,
+		FullMethod: EventServiceV1_GetEventsByPeriod_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EventServiceV1Server).GetEventsForPeriod(ctx, req.(*TimePeriodRequest))
+		return srv.(EventServiceV1Server).GetEventsByPeriod(ctx, req.(*TimePeriodRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -249,8 +249,8 @@ var EventServiceV1_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _EventServiceV1_DeleteEvent_Handler,
 		},
 		{
-			MethodName: "GetEventsForPeriod",
-			Handler:    _EventServiceV1_GetEventsForPeriod_Handler,
+			MethodName: "GetEventsByPeriod",
+			Handler:    _EventServiceV1_GetEventsByPeriod_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

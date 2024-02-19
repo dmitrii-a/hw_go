@@ -33,18 +33,32 @@ type ServerConfig struct {
 	ReadTimeout       int    `mapstructure:"READ_TIMEOUT_SECOND"`
 }
 
+type SchedulerConfig struct {
+	EventLifetime     int `mapstructure:"EVENT_LIFETIME_SECOND"`
+	PublishPeriodTime int `mapstructure:"PUBLISH_PERIOD_TIME_SECOND"`
+}
+
+type RabbitConfig struct {
+	Host     string `mapstructure:"HOST"`
+	Port     int    `mapstructure:"PORT"`
+	Username string `mapstructure:"USERNAME"`
+	Password string `mapstructure:"PASSWORD"`
+}
+
 // AppConfig app config.
 type AppConfig struct {
-	Server     ServerConfig `mapstructure:"APP"`
-	DB         DBConfig     `mapstructure:"DB"`
-	UseCacheDB bool         `mapstructure:"USE_CACHE_DB"`
+	Server     ServerConfig    `mapstructure:"APP"`
+	Scheduler  SchedulerConfig `mapstructure:"SCHEDULER"`
+	DB         DBConfig        `mapstructure:"DB"`
+	RabbitMQ   RabbitConfig    `mapstructure:"RABBITMQ"`
+	UseCacheDB bool            `mapstructure:"USE_CACHE_DB"`
 }
 
 // Config project config.
 var Config AppConfig
 
 func setDefaults() {
-	viper.SetDefault("USE_CACHE_DB", true)
+	viper.SetDefault("USE_CACHE_DB", false)
 
 	viper.SetDefault("DB.USERNAME", "admin")
 	viper.SetDefault("DB.PASSWORD", "password")
@@ -53,7 +67,6 @@ func setDefaults() {
 	viper.SetDefault("DB.PORT", 5455)
 	viper.SetDefault("DB.SSL_MODE", "disable")
 
-	// Set default values for the ServerConfig.
 	viper.SetDefault("APP.HOST", "127.0.0.1")
 	viper.SetDefault("APP.PORT", 8080)
 	viper.SetDefault("APP.GRPC_HOST", "127.0.0.1")
@@ -65,6 +78,14 @@ func setDefaults() {
 	viper.SetDefault("APP.SHUTDOWN_TIMEOUT_SECOND", 30)
 	viper.SetDefault("APP.READ_HEADER_TIMEOUT_SECOND", 10)
 	viper.SetDefault("APP.READ_TIMEOUT_SECOND", 10)
+
+	viper.SetDefault("RABBIT.HOST", "127.0.0.1")
+	viper.SetDefault("RABBIT.PORT", 5675)
+	viper.SetDefault("RABBIT.USERNAME", "admin")
+	viper.SetDefault("RABBIT.PASSWORD", "password")
+
+	viper.SetDefault("SCHEDULER.EVENT_LIFETIME_SECOND", 60*60*24*365)
+	viper.SetDefault("SCHEDULER.PUBLISH_PERIOD_TIME_SECOND", 60)
 }
 
 func init() {

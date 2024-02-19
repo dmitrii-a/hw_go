@@ -9,10 +9,12 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/go-faker/faker/v4 v4.2.0
 	github.com/gofiber/fiber/v3 v3.0.0-20240121073223-827013d789ec
+	github.com/google/uuid v1.5.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.9
 	github.com/pressly/goose/v3 v3.17.0
+	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
@@ -43,7 +45,6 @@ require (
 	github.com/gofiber/utils/v2 v2.0.0-beta.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/uuid v1.5.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/common"
+	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/domain"
 	"github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/pkg/freecache"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -29,4 +30,14 @@ func init() {
 	} else {
 		cacheDB = freecache.NewCacheDB(1024 * 1024 * 100)
 	}
+}
+
+func GetEventRepository() domain.EventRepository {
+	var eventRepository domain.EventRepository
+	if common.Config.UseCacheDB {
+		eventRepository = NewEventCacheRepository()
+	} else {
+		eventRepository = NewEventDBRepository()
+	}
+	return eventRepository
 }

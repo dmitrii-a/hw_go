@@ -33,5 +33,5 @@ type Notification struct {
 	EventID    string
 	EventTitle string
 	EventDate  time.Time
-	UserToSend string
+	UserToSend int64
 }

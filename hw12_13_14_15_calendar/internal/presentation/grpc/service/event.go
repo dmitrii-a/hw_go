@@ -140,8 +140,8 @@ func (s *grpcEventService) DeleteEvent(
 	return nil, nil
 }
 
-// GetEventsForPeriod returns a list of events for the specified period.
-func (s *grpcEventService) GetEventsForPeriod(
+// GetEventsByPeriod returns a list of events for the specified period.
+func (s *grpcEventService) GetEventsByPeriod(
 	_ context.Context,
 	timePeriodRequest *pb.TimePeriodRequest,
 ) (*pb.EventsResponse, error) {
