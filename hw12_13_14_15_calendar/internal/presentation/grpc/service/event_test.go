@@ -194,14 +194,14 @@ func TestGrpcEventService_DeleteEventError(t *testing.T) {
 	require.Equal(t, (*emptypb.Empty)(nil), result)
 }
 
-func TestGrpcEventService_GetEventsForPeriod(t *testing.T) {
+func TestGrpcEventService_GetEventsByPeriod(t *testing.T) {
 	mockRepo := new(mocks.EventRepository)
 	events := []*domain.Event{tests.GenerateTestEvent(), tests.GenerateTestEvent()}
 	startTime, endTime := tests.GetEventStartEndTime(events[0], events[1])
-	mockRepo.On("ListForPeriod", startTime, endTime).Return(events, nil)
+	mockRepo.On("GetEventsByPeriod", startTime, endTime).Return(events, nil)
 
 	s := grpcEventService{service: application.NewEventService(mockRepo)}
-	result, err := s.GetEventsForPeriod(
+	result, err := s.GetEventsByPeriod(
 		context.Background(),
 		&pb.TimePeriodRequest{
 			StartTime: timestamppb.New(startTime),
@@ -216,14 +216,14 @@ func TestGrpcEventService_GetEventsForPeriod(t *testing.T) {
 	require.Len(t, result.Events, 2)
 }
 
-func TestGrpcEventService_GetEventsForPeriodError(t *testing.T) {
+func TestGrpcEventService_GetEventsByPeriodError(t *testing.T) {
 	mockRepo := new(mocks.EventRepository)
 	events := []*domain.Event{tests.GenerateTestEvent(), tests.GenerateTestEvent()}
 	startTime, endTime := tests.GetEventStartEndTime(events[0], events[1])
-	mockRepo.On("ListForPeriod", startTime, endTime).Return(nil, errors.New("error"))
+	mockRepo.On("GetEventsByPeriod", startTime, endTime).Return(nil, errors.New("error"))
 
 	s := grpcEventService{service: application.NewEventService(mockRepo)}
-	result, err := s.GetEventsForPeriod(
+	result, err := s.GetEventsByPeriod(
 		context.Background(),
 		&pb.TimePeriodRequest{
 			StartTime: timestamppb.New(startTime),

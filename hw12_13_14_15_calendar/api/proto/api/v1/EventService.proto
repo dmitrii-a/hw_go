@@ -65,7 +65,7 @@ service EventServiceV1 {
       delete: "/api/v1/event/{id}"
     };
   }
-  rpc GetEventsForPeriod(TimePeriodRequest) returns (EventsResponse) {
+  rpc GetEventsByPeriod(TimePeriodRequest) returns (EventsResponse) {
     option (google.api.http) = {
       get: "/api/v1/events/{start_time}/{end_time}"
     };

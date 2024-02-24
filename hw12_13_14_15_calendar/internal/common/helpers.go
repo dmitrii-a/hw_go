@@ -1,6 +1,12 @@
 package common
 
-import "fmt"
+import (
+	"context"
+	"flag"
+	"fmt"
+	"os/signal"
+	"syscall"
+)
 
 // IsErr helper function to return bool if err != nil.
 func IsErr(err error) bool {
@@ -15,4 +21,18 @@ func ConnectionDBString(c DBConfig) string {
 
 func GetServerAddr(host string, port int) string {
 	return fmt.Sprintf("%v:%v", host, port)
+}
+
+func GetConfigPathFromArg() string {
+	var path string
+	flag.StringVar(&path, "config", "", "Path to configuration file")
+	flag.Parse()
+	return path
+}
+
+func GetNotifyCancelCtx() (context.Context, context.CancelFunc) {
+	ctx, cancel := signal.NotifyContext(
+		context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP,
+	)
+	return ctx, cancel
 }

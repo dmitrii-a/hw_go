@@ -147,7 +147,7 @@
     },
     "/api/v1/events/{start_time}/{end_time}": {
       "get": {
-        "operationId": "EventServiceV1_GetEventsForPeriod",
+        "operationId": "EventServiceV1_GetEventsByPeriod",
         "responses": {
           "200": {
             "description": "A successful response.",

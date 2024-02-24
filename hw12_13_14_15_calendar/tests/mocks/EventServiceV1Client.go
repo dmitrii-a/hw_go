@@ -129,8 +129,8 @@ func (_m *EventServiceV1Client) GetEvent(ctx context.Context, in *pb.EventIDRequ
 	return r0, r1
 }
 
-// GetEventsForPeriod provides a mock function with given fields: ctx, in, opts
-func (_m *EventServiceV1Client) GetEventsForPeriod(ctx context.Context, in *pb.TimePeriodRequest, opts ...grpc.CallOption) (*pb.EventsResponse, error) {
+// GetEventsByPeriod provides a mock function with given fields: ctx, in, opts
+func (_m *EventServiceV1Client) GetEventsByPeriod(ctx context.Context, in *pb.TimePeriodRequest, opts ...grpc.CallOption) (*pb.EventsResponse, error) {
 	_va := make([]interface{}, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
@@ -141,7 +141,7 @@ func (_m *EventServiceV1Client) GetEventsForPeriod(ctx context.Context, in *pb.T
 	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetEventsForPeriod")
+		panic("no return value specified for GetEventsByPeriod")
 	}
 
 	var r0 *pb.EventsResponse

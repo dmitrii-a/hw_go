@@ -106,12 +106,12 @@ func (_m *EventServiceV1Server) GetEvent(_a0 context.Context, _a1 *pb.EventIDReq
 	return r0, r1
 }
 
-// GetEventsForPeriod provides a mock function with given fields: _a0, _a1
-func (_m *EventServiceV1Server) GetEventsForPeriod(_a0 context.Context, _a1 *pb.TimePeriodRequest) (*pb.EventsResponse, error) {
+// GetEventsByPeriod provides a mock function with given fields: _a0, _a1
+func (_m *EventServiceV1Server) GetEventsByPeriod(_a0 context.Context, _a1 *pb.TimePeriodRequest) (*pb.EventsResponse, error) {
 	ret := _m.Called(_a0, _a1)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetEventsForPeriod")
+		panic("no return value specified for GetEventsByPeriod")
 	}
 
 	var r0 *pb.EventsResponse

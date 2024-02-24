@@ -124,13 +124,22 @@ func (repo *eventDBRepository) Delete(eventID string) error {
 	return err
 }
 
-// ListForPeriod returns a list of events for a period of time.
-func (repo *eventDBRepository) ListForPeriod(
-	startTime, endTime time.Time,
+// DeleteEventBeforeDate removes an event before date.
+func (repo *eventDBRepository) DeleteEventBeforeDate(date time.Time) error {
+	result, err := db.Exec(
+		"DELETE FROM event WHERE start_time <= $1", date,
+	)
+	if common.IsErr(err) {
+		return err
+	}
+	_, err = result.RowsAffected()
+	return err
+}
+
+func (repo *eventDBRepository) getEvents(
+	query string, args ...interface{},
 ) ([]*domain.Event, error) {
-	query := `SELECT id, title, start_time, end_time, notify_time, description, user_id, 
-       		  created_time FROM event WHERE start_time >= $1 AND end_time <= $2`
-	rows, err := db.Query(query, startTime, endTime)
+	rows, err := db.Query(query, args...)
 	if common.IsErr(err) {
 		return nil, err
 	}
@@ -158,11 +167,28 @@ func (repo *eventDBRepository) ListForPeriod(
 		e.NormalizeTime()
 		events = append(events, &e)
 	}
-
 	if err := rows.Err(); common.IsErr(err) {
 		return nil, err
 	}
 	return events, nil
+}
+
+// GetEventsByPeriod returns a list of events for a period of time.
+func (repo *eventDBRepository) GetEventsByPeriod(
+	startTime, endTime time.Time,
+) ([]*domain.Event, error) {
+	query := `SELECT id, title, start_time, end_time, notify_time, description, user_id, 
+       		  created_time FROM event WHERE start_time >= $1 AND end_time <= $2`
+	return repo.getEvents(query, startTime, endTime)
+}
+
+// GetEventsByNotifyTime returns a list of events by notify time.
+func (repo *eventDBRepository) GetEventsByNotifyTime(
+	startTime, endTime time.Time,
+) ([]*domain.Event, error) {
+	query := `SELECT id, title, start_time, end_time, notify_time, description, user_id, 
+	   		  created_time FROM event WHERE notify_time >= $1 AND notify_time <= $2`
+	return repo.getEvents(query, startTime, endTime)
 }
 
 type eventCacheRepository struct{}
@@ -235,8 +261,30 @@ func (repo *eventCacheRepository) Delete(eventID string) error {
 	return nil
 }
 
-// ListForPeriod returns a list of events for a period of time.
-func (repo *eventCacheRepository) ListForPeriod(
+// DeleteEventBeforeDate removes an event before date.
+func (repo *eventCacheRepository) DeleteEventBeforeDate(date time.Time) error {
+	keys := cacheDB.Keys()
+	for _, key := range keys {
+		data, err := cacheDB.Get(key)
+		if common.IsErr(err) {
+			return err
+		}
+		event := &domain.Event{}
+		err = json.Unmarshal(data, event)
+		if common.IsErr(err) {
+			return err
+		}
+		if event.StartTime.Before(date) || event.StartTime.Equal(date) {
+			if affected := cacheDB.Del(key); !affected {
+				return errors.New("event deletion failed")
+			}
+		}
+	}
+	return nil
+}
+
+// GetEventsByPeriod returns a list of events for a period of time.
+func (repo *eventCacheRepository) GetEventsByPeriod(
 	startTime, endTime time.Time,
 ) ([]*domain.Event, error) {
 	keys := cacheDB.Keys()
@@ -255,6 +303,32 @@ func (repo *eventCacheRepository) ListForPeriod(
 		startTime = startTime.Add(-time.Millisecond)
 		endTime = endTime.Add(time.Millisecond)
 		if event.StartTime.After(startTime) && event.EndTime.Before(endTime) {
+			result = append(result, event)
+		}
+	}
+	return result, nil
+}
+
+// GetEventsByNotifyTime returns a list of events by notify time.
+func (repo *eventCacheRepository) GetEventsByNotifyTime(
+	startTime, endTime time.Time,
+) ([]*domain.Event, error) {
+	keys := cacheDB.Keys()
+	var result []*domain.Event
+	for _, key := range keys {
+		data, err := cacheDB.Get(key)
+		if common.IsErr(err) {
+			return nil, err
+		}
+		event := &domain.Event{}
+		err = json.Unmarshal(data, event)
+		if common.IsErr(err) {
+			return nil, err
+		}
+		// For time equality in if statement
+		startTime = startTime.Add(-time.Millisecond)
+		endTime = endTime.Add(time.Millisecond)
+		if event.NotifyTime.After(startTime) && event.NotifyTime.Before(endTime) {
 			result = append(result, event)
 		}
 	}
