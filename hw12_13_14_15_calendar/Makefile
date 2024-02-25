@@ -1,28 +1,45 @@
-BIN_CALENDAR := "./bin/calendar"
-BIN_SCHEDULER := "./bin/scheduler"
-BIN_SENDER := "./bin/sender"
+BIN_CALENDAR ?= "./bin/calendar"
+BIN_SCHEDULER ?= "./bin/scheduler"
+BIN_SENDER ?= "./bin/sender"
 
-DOCKER_IMG="calendar:develop"
+DOCKER_IMG ?= "calendar:develop"
 
-MIGRATION_DIR="./migrations"
-POSTGRES_USER="admin"
-POSTGRES_PASSWORD="password"
-POSTGRES_DB="calendar-service"
-POSTGRES_PORT="5455"
-POSTGRES_HOST="127.0.0.1"
-POSTGRES_CONTAINER_NAME="calendar-service-db"
+MIGRATION_DIR ?= "./migrations"
+POSTGRES_USER ?= "admin"
+POSTGRES_PASSWORD ?= "password"
+POSTGRES_DB ?= "calendar-service"
+POSTGRES_PORT ?= "5455"
+POSTGRES_HOST ?= "127.0.0.1"
+POSTGRES_CONTAINER_NAME ?= "calendar-service-db"
 
-RABBITMQ_CONTAINER_NAME="calendar-service-rabbitmq"
-RABBITMQ_PORT="5675"
-RABBITMQ_MANAGEMENT_PORT="15675"
-RABBITMQ_HOST="127.0.0.1"
-RABBITMQ_USER="admin"
-RABBITMQ_PASSWORD="password"
+RABBITMQ_CONTAINER_NAME ?= "calendar-service-rabbitmq"
+RABBITMQ_PORT ?= "5675"
+RABBITMQ_MANAGEMENT_PORT ?= "15675"
+RABBITMQ_HOST ?= "127.0.0.1"
+RABBITMQ_USER ?= "admin"
+RABBITMQ_PASSWORD ?= "password"
 
-GOOSE_DB_STRING="host=${POSTGRES_HOST} port=${POSTGRES_PORT} dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
+GOOSE_DB_STRING ?= "host=${POSTGRES_HOST} port=${POSTGRES_PORT} dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD) sslmode=disable"
 
-GIT_HASH := $(shell git log --format="%h" -n 1)
-LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
+GIT_HASH ?= $(shell git log --format="%h" -n 1)
+LDFLAGS ?= -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
+
+up:
+	cd deployments && docker-compose up -d
+down:
+	cd deployments && docker-compose down
+restart:
+	cd deployments && docker-compose restart
+rm:
+	cd deployments && docker-compose rm -v
+
+integration-tests: down
+	cd deployments && COMPOSE_PROJECT_NAME=test docker-compose up -d --build
+	trap 'cd deployments && COMPOSE_PROJECT_NAME=test docker-compose down -v' EXIT; \
+	go test -v ./tests/integration/...
+
+integration-tests-local:
+	go test -v ./tests/integration/...
 
 start-postgres:
 	(docker start $(POSTGRES_CONTAINER_NAME)) || docker run --name $(POSTGRES_CONTAINER_NAME) -p $(POSTGRES_PORT):5432 -e POSTGRES_DB=$(POSTGRES_DB) -e POSTGRES_USER=$(POSTGRES_USER) -e POSTGRES_PASSWORD=$(POSTGRES_PASSWORD) -d postgres:15.4
@@ -113,6 +130,6 @@ install-mockery:
 	go install github.com/vektra/mockery/v2@v2.40.1
 
 generate-mocks:
-	mockery --output=./tests/mocks --all
+	mockery --output=./tests/mocks --exclude=vendor --all
 
-.PHONY: build build-calendar build-scheduler build-scheduler run run-calendar run-scheduler run-sender build-img run-img version test lint fix-code-style migrate-up migrate-down migrate-status start-postgres stop-postgres rm-postgres install-lint-deps start-rabbitmq stop-rabbitmq rm-rabbitmq generate generate-mocks install-mockery
+.PHONY: build build-calendar build-scheduler build-scheduler run run-calendar run-scheduler run-sender build-img run-img version test lint fix-code-style migrate-up migrate-down migrate-status start-postgres stop-postgres rm-postgres install-lint-deps start-rabbitmq stop-rabbitmq rm-rabbitmq generate generate-mocks install-mockery up down restart rm

@@ -2,6 +2,8 @@ package domain
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Event entity.
@@ -9,8 +11,8 @@ type Event struct {
 	ID          string
 	Title       string
 	StartTime   time.Time
-	EndTime     time.Time
-	NotifyTime  time.Time
+	EndTime     *time.Time
+	NotifyTime  *time.Time
 	Description string
 	UserID      int64
 	CreatedTime *time.Time
@@ -24,8 +26,31 @@ func (e *Event) NormalizeTime() {
 		e.CreatedTime = &createdTime
 	}
 	e.StartTime = e.StartTime.UTC().Truncate(truncateTime)
-	e.EndTime = e.EndTime.UTC().Truncate(truncateTime)
-	e.NotifyTime = e.NotifyTime.UTC().Truncate(truncateTime)
+	if e.EndTime != nil {
+		t := e.EndTime.UTC().Truncate(truncateTime)
+		e.EndTime = &t
+	}
+	if e.NotifyTime != nil {
+		t := e.NotifyTime.UTC().Truncate(truncateTime)
+		e.NotifyTime = &t
+	}
+}
+
+func (e *Event) NewUUID() string {
+	return uuid.New().String()
+}
+
+func (e *Event) Validate() error {
+	if e.EndTime != nil && e.StartTime.After(*e.EndTime) {
+		return ErrEndTime
+	}
+	if e.NotifyTime != nil && e.StartTime.After(*e.NotifyTime) {
+		return ErrNotifyTime
+	}
+	if _, err := uuid.Parse(e.ID); err != nil {
+		return ErrUUID
+	}
+	return nil
 }
 
 // Notification entity.

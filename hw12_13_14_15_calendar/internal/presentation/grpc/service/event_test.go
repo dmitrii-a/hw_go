@@ -19,33 +19,18 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func createTestEventRequest(event *domain.Event) *pb.EventRequest {
-	return &pb.EventRequest{
-		Event: &pb.Event{
-			Id:          event.ID,
-			Title:       event.Title,
-			StartTime:   timestamppb.New(event.StartTime),
-			EndTime:     timestamppb.New(event.EndTime),
-			NotifyTime:  timestamppb.New(event.NotifyTime),
-			Description: event.Description,
-			UserId:      event.UserID,
-		},
-		RequestId: faker.UUIDDigit(options.WithGenerateUniqueValues(true)),
-	}
-}
-
 func TestGrpcEventService_ConvertEvent(t *testing.T) {
 	s := &grpcEventService{}
 	event := tests.GenerateTestEvent()
-	result := s.convertEvent(event)
+	result := s.eventResponse(event)
 
 	require.NotNil(t, result)
 	require.NotNil(t, result.Event)
 	require.Equal(t, event.ID, result.Event.Id)
 	require.Equal(t, event.Title, result.Event.Title)
 	require.Equal(t, timestamppb.New(event.StartTime), result.Event.StartTime)
-	require.Equal(t, timestamppb.New(event.EndTime), result.Event.EndTime)
-	require.Equal(t, timestamppb.New(event.NotifyTime), result.Event.NotifyTime)
+	require.Equal(t, timestamppb.New(*event.EndTime), result.Event.EndTime)
+	require.Equal(t, timestamppb.New(*event.NotifyTime), result.Event.NotifyTime)
 	require.Equal(t, event.UserID, result.Event.UserId)
 	require.Equal(t, timestamppb.New(*event.CreatedTime), result.Event.CreatedTime)
 }
@@ -56,7 +41,7 @@ func TestGrpcEventService_ConvertEvents(t *testing.T) {
 		tests.GenerateTestEvent(),
 		tests.GenerateTestEvent(),
 	}
-	result := s.convertEvents(events)
+	result := s.eventsResponse(events)
 
 	require.NotNil(t, result)
 	require.NotNil(t, result.Events)
@@ -65,16 +50,16 @@ func TestGrpcEventService_ConvertEvents(t *testing.T) {
 	require.Equal(t, events[0].ID, result.Events[0].Id)
 	require.Equal(t, events[0].Title, result.Events[0].Title)
 	require.Equal(t, timestamppb.New(events[0].StartTime), result.Events[0].StartTime)
-	require.Equal(t, timestamppb.New(events[0].EndTime), result.Events[0].EndTime)
-	require.Equal(t, timestamppb.New(events[0].NotifyTime), result.Events[0].NotifyTime)
+	require.Equal(t, timestamppb.New(*events[0].EndTime), result.Events[0].EndTime)
+	require.Equal(t, timestamppb.New(*events[0].NotifyTime), result.Events[0].NotifyTime)
 	require.Equal(t, events[0].UserID, result.Events[0].UserId)
 	require.Equal(t, timestamppb.New(*events[0].CreatedTime), result.Events[0].CreatedTime)
 
 	require.Equal(t, events[1].ID, result.Events[1].Id)
 	require.Equal(t, events[1].Title, result.Events[1].Title)
 	require.Equal(t, timestamppb.New(events[1].StartTime), result.Events[1].StartTime)
-	require.Equal(t, timestamppb.New(events[1].EndTime), result.Events[1].EndTime)
-	require.Equal(t, timestamppb.New(events[1].NotifyTime), result.Events[1].NotifyTime)
+	require.Equal(t, timestamppb.New(*events[1].EndTime), result.Events[1].EndTime)
+	require.Equal(t, timestamppb.New(*events[1].NotifyTime), result.Events[1].NotifyTime)
 	require.Equal(t, events[1].UserID, result.Events[1].UserId)
 	require.Equal(t, timestamppb.New(*events[1].CreatedTime), result.Events[1].CreatedTime)
 }
@@ -96,7 +81,7 @@ func TestGrpcEventService_AddEvent(t *testing.T) {
 	mockRepo := new(mocks.EventRepository)
 	event := tests.GenerateTestEvent()
 	event.CreatedTime = nil
-	mockRepo.On("Add", event).Run(func(args mock.Arguments) {
+	mockRepo.On("Add", mock.Anything).Run(func(args mock.Arguments) {
 		e := args[0].(*domain.Event)
 		createTime := time.Now().UTC()
 		e.CreatedTime = &createTime
@@ -104,22 +89,22 @@ func TestGrpcEventService_AddEvent(t *testing.T) {
 	}).Return(nil)
 
 	s := grpcEventService{service: application.NewEventService(mockRepo)}
-	result, err := s.CreateEvent(context.Background(), createTestEventRequest(event))
+	result, err := s.CreateEvent(context.Background(), tests.CreateTestEventRequest(event))
 
 	mockRepo.AssertExpectations(t)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Equal(t, event.ID, result.Event.Id)
+	require.NotEmpty(t, result.Event.Id)
 }
 
 func TestGrpcEventService_AddEventError(t *testing.T) {
 	mockRepo := new(mocks.EventRepository)
 	event := tests.GenerateTestEvent()
 	event.CreatedTime = nil
-	mockRepo.On("Add", event).Return(domain.ErrEventCreate)
+	mockRepo.On("Add", mock.Anything).Return(domain.ErrEventCreate)
 
 	s := grpcEventService{service: application.NewEventService(mockRepo)}
-	result, err := s.CreateEvent(context.Background(), createTestEventRequest(event))
+	result, err := s.CreateEvent(context.Background(), tests.CreateTestEventRequest(event))
 
 	mockRepo.AssertExpectations(t)
 	require.Error(t, err)
@@ -138,7 +123,7 @@ func TestGrpcEventService_UpdateEvent(t *testing.T) {
 	}).Return(nil)
 
 	s := grpcEventService{service: application.NewEventService(mockRepo)}
-	result, err := s.UpdateEvent(context.Background(), createTestEventRequest(event))
+	result, err := s.UpdateEvent(context.Background(), tests.CreateTestEventRequest(event))
 
 	mockRepo.AssertExpectations(t)
 	require.NoError(t, err)
@@ -153,7 +138,7 @@ func TestGrpcEventService_UpdateEventError(t *testing.T) {
 	mockRepo.On("Update", event).Return(domain.ErrEventNotExist)
 
 	s := grpcEventService{service: application.NewEventService(mockRepo)}
-	result, err := s.UpdateEvent(context.Background(), createTestEventRequest(event))
+	result, err := s.UpdateEvent(context.Background(), tests.CreateTestEventRequest(event))
 
 	mockRepo.AssertExpectations(t)
 	require.Error(t, err)
@@ -171,7 +156,7 @@ func TestGrpcEventService_DeleteEvent(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	require.NoError(t, err)
-	require.Equal(t, (*emptypb.Empty)(nil), result)
+	require.Equal(t, new(emptypb.Empty), result)
 }
 
 func TestGrpcEventService_DeleteEventError(t *testing.T) {
@@ -191,7 +176,7 @@ func TestGrpcEventService_DeleteEventError(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 	require.NoError(t, err)
-	require.Equal(t, (*emptypb.Empty)(nil), result)
+	require.Equal(t, new(emptypb.Empty), result)
 }
 
 func TestGrpcEventService_GetEventsByPeriod(t *testing.T) {

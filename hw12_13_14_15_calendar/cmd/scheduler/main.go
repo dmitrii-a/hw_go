@@ -12,7 +12,7 @@ func main() {
 	ctx, cancel := common.GetNotifyCancelCtx()
 	defer cancel()
 	go func() {
-		application.NewEventSchedulerService(
+		application.NewEventSchedulerProcessor(
 			repository.GetEventRepository(), event.NewRabbitClient(),
 		).Schedule(ctx)
 	}()

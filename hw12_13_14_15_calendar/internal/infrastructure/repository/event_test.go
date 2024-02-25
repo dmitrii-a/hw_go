@@ -109,7 +109,7 @@ func (s *eventDBTestSuite) TestListEventsByPeriodWithNoEvents() {
 
 func (s *eventDBTestSuite) TestListEventsByPeriodWithSingleEvent() {
 	e := s.setEventInDB()
-	events, err := s.repo.GetEventsByPeriod(e.StartTime, e.EndTime)
+	events, err := s.repo.GetEventsByPeriod(e.StartTime, *e.EndTime)
 	s.NoError(err)
 	s.Len(events, 1)
 	s.Equal(e, events[0])
@@ -157,8 +157,7 @@ func (s *eventMockSQLTestSuite) SetupTest() {
 	db = sqlx.NewDb(mockDB, "sqlmock")
 }
 
-func (s *eventMockSQLTestSuite) setEventInDB() *domain.Event {
-	e := tests.GenerateTestEvent()
+func (s *eventMockSQLTestSuite) setEventInDB(e *domain.Event) *domain.Event {
 	rows := sqlmock.NewRows(
 		[]string{
 			"id", "title", "start_time", "end_time", "notify_time", "description", "user_id", "created_time",
@@ -171,7 +170,7 @@ func (s *eventMockSQLTestSuite) setEventInDB() *domain.Event {
 }
 
 func (s *eventMockSQLTestSuite) TestNonExistedEvent() {
-	_ = s.setEventInDB()
+	_ = s.setEventInDB(tests.GenerateTestEvent())
 	eventID := faker.UUIDHyphenated()
 	event, err := s.repo.Get(eventID)
 	s.Error(err)
@@ -217,7 +216,7 @@ func (s *eventMockSQLTestSuite) TestAddEventWithExistingID() {
 
 func (s *eventMockSQLTestSuite) TestUpdateEvent() {
 	e := tests.GenerateTestEvent()
-	s.mock.ExpectExec("^UPDATE event SET (.+) WHERE id = \\$9$").
+	s.mock.ExpectExec("^UPDATE event SET (.+) WHERE id = \\$8$").
 		WithArgs(
 			e.Title,
 			e.StartTime,
@@ -225,16 +224,16 @@ func (s *eventMockSQLTestSuite) TestUpdateEvent() {
 			e.NotifyTime,
 			e.Description,
 			e.UserID,
-			e.CreatedTime,
 			sqlmock.AnyArg(),
 			e.ID,
 		).WillReturnResult(sqlmock.NewResult(1, 1))
+	s.setEventInDB(e)
 	err := s.repo.Update(e)
 	s.NoError(err)
 }
 
 func (s *eventMockSQLTestSuite) TestGetEvent() {
-	e := s.setEventInDB()
+	e := s.setEventInDB(tests.GenerateTestEvent())
 	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.NotNil(result)
@@ -242,7 +241,7 @@ func (s *eventMockSQLTestSuite) TestGetEvent() {
 }
 
 func (s *eventMockSQLTestSuite) TestDeleteEvent() {
-	e := s.setEventInDB()
+	e := s.setEventInDB(tests.GenerateTestEvent())
 	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.NotNil(result)
@@ -254,7 +253,7 @@ func (s *eventMockSQLTestSuite) TestDeleteEvent() {
 }
 
 func (s *eventMockSQLTestSuite) TestDeleteEventsBeforeDate() {
-	e := s.setEventInDB()
+	e := s.setEventInDB(tests.GenerateTestEvent())
 	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.NotNil(result)
@@ -299,13 +298,13 @@ func (s *eventMockSQLTestSuite) TestListEventsByPeriodWithNoEvents() {
 }
 
 func (s *eventMockSQLTestSuite) TestListEventsByPeriodWithSingleEvent() {
-	e := s.setEventInDB()
+	e := s.setEventInDB(tests.GenerateTestEvent())
 	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.Equal(e, result)
 	s.mockPeriodSelect(
 		result.StartTime,
-		result.EndTime,
+		*result.EndTime,
 		[]driver.Value{
 			e.ID,
 			e.Title,
@@ -317,7 +316,7 @@ func (s *eventMockSQLTestSuite) TestListEventsByPeriodWithSingleEvent() {
 			e.CreatedTime,
 		},
 	)
-	events, err := s.repo.GetEventsByPeriod(e.StartTime, e.EndTime)
+	events, err := s.repo.GetEventsByPeriod(e.StartTime, *e.EndTime)
 	s.NoError(err)
 	s.Len(events, 1)
 	s.Equal(e, events[0])
@@ -359,7 +358,7 @@ func (s *eventMockSQLTestSuite) TestListEventsByPeriodWithMultipleEvents() {
 }
 
 func (s *eventMockSQLTestSuite) TestListEventsByPeriodWithEventOutsidePeriod() {
-	e := s.setEventInDB()
+	e := s.setEventInDB(tests.GenerateTestEvent())
 	result, err := s.repo.Get(e.ID)
 	s.NoError(err)
 	s.Equal(e, result)
