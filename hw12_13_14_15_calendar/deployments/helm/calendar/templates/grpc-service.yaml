@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "calendar.fullname" . }}-grpc
+  labels:
+    {{- include "calendar.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.grpcService.type }}
+  ports:
+    - port: {{ .Values.grpcService.port }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    {{- include "calendar.selectorLabels" . | nindent 4 }}
