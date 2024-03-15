@@ -59,17 +59,7 @@ func (m *Event) validate(all bool) error {
 
 	var errors []error
 
-	if err := m._validateUuid(m.GetId()); err != nil {
-		err = EventValidationError{
-			field:  "Id",
-			reason: "value must be a valid UUID",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Id
 
 	if utf8.RuneCountInString(m.GetTitle()) < 1 {
 		err := EventValidationError{
@@ -195,14 +185,6 @@ func (m *Event) validate(all bool) error {
 
 	if len(errors) > 0 {
 		return EventMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *Event) _validateUuid(uuid string) error {
-	if matched := _event_service_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil

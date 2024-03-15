@@ -53,8 +53,8 @@ func (repo *eventDBRepository) Add(event *domain.Event) error {
 func (repo *eventDBRepository) Update(event *domain.Event) error {
 	now := time.Now()
 	query := `UPDATE event SET (
-                  title, start_time, end_time, notify_time, description, user_id, created_time, updated_time
-              ) = ($1, $2, $3, $4, $5, $6, $7, $8) WHERE id = $9`
+                  title, start_time, end_time, notify_time, description, user_id, updated_time
+              ) = ($1, $2, $3, $4, $5, $6, $7) WHERE id = $8`
 	result, err := db.Exec(
 		query,
 		event.Title,
@@ -63,7 +63,6 @@ func (repo *eventDBRepository) Update(event *domain.Event) error {
 		event.NotifyTime,
 		event.Description,
 		event.UserID,
-		event.CreatedTime,
 		now,
 		event.ID,
 	)
@@ -77,6 +76,11 @@ func (repo *eventDBRepository) Update(event *domain.Event) error {
 	if rowsAffected == 0 {
 		return domain.ErrEventNotExist
 	}
+	e, err := repo.Get(event.ID)
+	if common.IsErr(err) {
+		return err
+	}
+	event.CreatedTime = e.CreatedTime
 	return err
 }
 
@@ -120,8 +124,14 @@ func (repo *eventDBRepository) Delete(eventID string) error {
 	if common.IsErr(err) {
 		return err
 	}
-	_, err = result.RowsAffected()
-	return err
+	count, err := result.RowsAffected()
+	if common.IsErr(err) {
+		return err
+	}
+	if count == 0 {
+		return domain.ErrEventNotExist
+	}
+	return nil
 }
 
 // DeleteEventBeforeDate removes an event before date.

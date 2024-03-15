@@ -12,8 +12,8 @@ func main() {
 	ctx, cancel := common.GetNotifyCancelCtx()
 	defer cancel()
 	go func() {
-		application.NewEventSenderService(
-			repository.GetEventRepository(), event.NewRabbitClient(),
+		application.NewEventSenderProcessor(
+			repository.GetEventRepository(), event.NewRabbitClient(), event.NewRabbitClient(),
 		).Consume(ctx)
 	}()
 	<-ctx.Done()

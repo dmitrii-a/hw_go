@@ -72,20 +72,20 @@ func setDefaults() {
 	viper.SetDefault("APP.GRPC_HOST", "127.0.0.1")
 	viper.SetDefault("APP.GRPC_PORT", 50051)
 	viper.SetDefault("APP.GRPC_GW_HOST", "127.0.0.1")
-	viper.SetDefault("APP.GRPC_GW_PORT", 8081)
+	viper.SetDefault("APP.GRPC_GW_PORT", 3000)
 	viper.SetDefault("APP.DEBUG", true)
 	viper.SetDefault("APP.LOG_LEVEL", "info")
 	viper.SetDefault("APP.SHUTDOWN_TIMEOUT_SECOND", 30)
 	viper.SetDefault("APP.READ_HEADER_TIMEOUT_SECOND", 10)
 	viper.SetDefault("APP.READ_TIMEOUT_SECOND", 10)
 
-	viper.SetDefault("RABBIT.HOST", "127.0.0.1")
-	viper.SetDefault("RABBIT.PORT", 5675)
-	viper.SetDefault("RABBIT.USERNAME", "admin")
-	viper.SetDefault("RABBIT.PASSWORD", "password")
+	viper.SetDefault("RABBITMQ.HOST", "127.0.0.1")
+	viper.SetDefault("RABBITMQ.PORT", 5675)
+	viper.SetDefault("RABBITMQ.USERNAME", "admin")
+	viper.SetDefault("RABBITMQ.PASSWORD", "password")
 
 	viper.SetDefault("SCHEDULER.EVENT_LIFETIME_SECOND", 60*60*24*365)
-	viper.SetDefault("SCHEDULER.PUBLISH_PERIOD_TIME_SECOND", 60)
+	viper.SetDefault("SCHEDULER.PUBLISH_PERIOD_TIME_SECOND", 10)
 }
 
 func init() {

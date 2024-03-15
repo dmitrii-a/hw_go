@@ -8,7 +8,7 @@ package event;
 option go_package = "github.com/dmitrii-a/hw_go/hw12_13_14_15_calendar/internal/presentation/grpc/v1/api;pb";
 
 message Event {
-  string id = 1 [(validate.rules).string.uuid = true];
+  string id = 1;
   string title = 2 [(validate.rules).string.min_len = 1];
   google.protobuf.Timestamp start_time = 3 [(validate.rules).timestamp.required = true];
   google.protobuf.Timestamp end_time = 4;
