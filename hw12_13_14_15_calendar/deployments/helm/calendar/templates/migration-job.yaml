@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "calendar.fullname" . }}-migration
+  annotations:
+    "helm.sh/hook": "post-install,post-upgrade"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "calendar.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.calendarMigrationImage.repository }}:{{ .Values.calendarMigrationImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.calendarMigrationImage.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "calendar.fullname" . }}
+  backoffLimit: 3
+

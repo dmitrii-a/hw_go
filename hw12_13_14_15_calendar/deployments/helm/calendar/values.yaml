@@ -1,0 +1,117 @@
+replicaCount: 1
+
+calendarImage:
+  repository: silitr/otus-calendar
+  pullPolicy: IfNotPresent
+  tag: "1.0.2"
+
+calendarSenderImage:
+  repository: silitr/otus-calendar-sender
+  pullPolicy: IfNotPresent
+  tag: "1.0.2"
+
+calendarSchedulerImage:
+  repository: silitr/otus-calendar-scheduler
+  pullPolicy: IfNotPresent
+  tag: "1.0.2"
+
+calendarMigrationImage:
+  repository: silitr/otus-calendar-migration
+  pullPolicy: IfNotPresent
+  tag: "1.0.2"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+grpcService:
+  type: ClusterIP
+  port: 50051
+
+grpcGwService:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: calendar.test.otus.ru
+  tls: []
+
+resources:
+  limits:
+   cpu: 300m
+   memory: 512Mi
+  requests:
+   cpu: 100m
+   memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /api/v1/health/
+    port: http
+readinessProbe:
+  httpGet:
+    path: /api/v1/health/
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes: []
+
+volumeMounts: []
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+envVars:
+  "RABBITMQ.HOST": "test-rabbitmq"
+  "RABBITMQ.PORT": "5672"
+  "RABBITMQ.USERNAME": ""
+  "RABBITMQ.PASSWORD": ""
+
+  "DB.HOST": "test-postgres-postgresql"
+  "DB.PORT": "5432"
+  "DB.USERNAME": ""
+  "DB.PASSWORD": ""
+  "DB.DATABASE": "calendar-service"
+
+  "POSTGRES_HOST": "test-postgres-postgresql"
+  "POSTGRES_PORT": "5432"
+  "POSTGRES_USER": ""
+  "POSTGRES_PASSWORD": ""
+  "POSTGRES_DB": "calendar-service"
+
+  "APP.HOST": "0.0.0.0"
+  "APP.PORT": "80"
+  "APP.GRPC_HOST": "0.0.0.0"
+  "APP.GRPC_PORT": "50051"
+  "APP.GRPC_GW_PORT": "3000"
+  "APP.GRPC_GW_HOST": "0.0.0.0"
+  "APP.DEBUG": "false"
